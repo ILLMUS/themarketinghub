@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart } from "lucide-react";
 import { useState } from "react";
 
 export function Header() {
@@ -46,6 +46,12 @@ export function Header() {
               <Button size="sm" onClick={() => navigate("/post-ad")} className="gradient-primary border-0">
                 <Plus className="h-4 w-4 mr-1" /> Post Ad
               </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/saved")} title="Saved Ads">
+                <Heart className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/messages")} title="Messages">
+                <MessageCircle className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate("/profile")} title="Profile">
                 <User className="h-4 w-4" />
               </Button>
@@ -88,6 +94,12 @@ export function Header() {
                 )}
                 <Button className="w-full gradient-primary border-0" onClick={() => { navigate("/post-ad"); setMenuOpen(false); }}>
                   <Plus className="h-4 w-4 mr-1" /> Post Ad
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => { navigate("/saved"); setMenuOpen(false); }}>
+                  <Heart className="h-4 w-4 mr-1" /> Saved Ads
+                </Button>
+                <Button variant="outline" className="w-full" onClick={() => { navigate("/messages"); setMenuOpen(false); }}>
+                  <MessageCircle className="h-4 w-4 mr-1" /> Messages
                 </Button>
                 <Button variant="outline" className="w-full" onClick={() => { navigate("/profile"); setMenuOpen(false); }}>
                   <User className="h-4 w-4 mr-1" /> Profile

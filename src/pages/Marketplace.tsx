@@ -33,6 +33,7 @@ const MarketplacePage = () => {
         .from("advertisements")
         .select("*, categories(name)")
         .eq("status", "approved")
+        .gte("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
 
       if (selectedCategory && selectedCategory !== "all") {

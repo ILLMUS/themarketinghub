@@ -1,15 +1,20 @@
-import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useSavedAds } from "@/hooks/useSavedAds";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, MessageCircle, MapPin, ArrowLeft, Share2, Calendar } from "lucide-react";
+import { Phone, MessageCircle, MapPin, ArrowLeft, Share2, Calendar, Heart } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
 const AdDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isSaved, toggleSave } = useSavedAds();
   const [selectedImage, setSelectedImage] = useState(0);
 
   const { data: ad, isLoading } = useQuery({
@@ -140,9 +145,49 @@ const AdDetailsPage = () => {
                 </a>
               </Button>
             </div>
-            <Button variant="ghost" className="w-full" onClick={handleShare}>
-              <Share2 className="h-4 w-4 mr-2" /> Share this ad
-            </Button>
+            {user && user.id !== ad.user_id && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  // Find or create conversation
+                  const { data: existing } = await supabase
+                    .from("conversations")
+                    .select("id")
+                    .eq("ad_id", ad.id)
+                    .eq("buyer_id", user.id)
+                    .maybeSingle();
+                  if (existing) {
+                    navigate(`/messages?conversation=${existing.id}`);
+                  } else {
+                    const { data: newConvo, error } = await supabase
+                      .from("conversations")
+                      .insert({ ad_id: ad.id, buyer_id: user.id, seller_id: ad.user_id })
+                      .select("id")
+                      .single();
+                    if (error) { toast.error("Could not start conversation"); return; }
+                    navigate(`/messages?conversation=${newConvo.id}`);
+                  }
+                }}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" /> Message Seller
+              </Button>
+            )}
+            <div className="flex gap-2">
+              {user && (
+                <Button
+                  variant="ghost"
+                  className="flex-1"
+                  onClick={() => toggleSave(ad.id)}
+                >
+                  <Heart className={`h-4 w-4 mr-2 ${isSaved(ad.id) ? "fill-destructive text-destructive" : ""}`} />
+                  {isSaved(ad.id) ? "Saved" : "Save"}
+                </Button>
+              )}
+              <Button variant="ghost" className={user ? "flex-1" : "w-full"} onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-2" /> Share
+              </Button>
+            </div>
           </div>
         </div>
       </div>
