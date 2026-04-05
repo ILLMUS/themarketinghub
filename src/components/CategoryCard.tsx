@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import {
-  Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Users, Tag
+  Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Users, Tag,
+  Utensils, Heart, Scissors, Phone, TreePine, FileText, Landmark, Truck
 } from "lucide-react";
 
 const iconMap: Record<string, React.ElementType> = {
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Users,
+  Utensils, Heart, Scissors, Phone, TreePine, FileText, Landmark, Truck,
 };
 
 interface CategoryCardProps {

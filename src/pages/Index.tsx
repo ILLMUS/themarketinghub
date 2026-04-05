@@ -1,13 +1,23 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdCard } from "@/components/AdCard";
 import { CategoryCard } from "@/components/CategoryCard";
 import { Button } from "@/components/ui/button";
-import { Search, ArrowRight, TrendingUp, Users, ShoppingBag, FileText, CheckCircle, DollarSign } from "lucide-react";
+import { Search, ArrowRight, TrendingUp, Users, ShoppingBag, FileText, CheckCircle, DollarSign,
+  Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Tag,
+  Utensils, Heart, Scissors, Phone, TreePine, Landmark, Truck } from "lucide-react";
 import heroCollage from "@/assets/hero-collage.png";
 
+const chipIconMap: Record<string, React.ElementType> = {
+  Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase,
+  Utensils, Heart, Scissors, Phone, TreePine, FileText, Landmark, Truck,
+};
+
 const HomePage = () => {
+  const [heroSearch, setHeroSearch] = useState("");
+  const navigate = useNavigate();
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -76,18 +86,37 @@ const HomePage = () => {
                   <Link to="/marketplace"><Search className="mr-1 h-4 w-4" /> Browse Marketplace</Link>
                 </Button>
               </div>
-              <div className="flex items-center gap-4 pt-2 text-xs" style={{ color: "hsl(220 15% 60%)" }}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (heroSearch.trim()) navigate(`/marketplace?search=${encodeURIComponent(heroSearch.trim())}`);
+                }}
+                className="relative max-w-md pt-1"
+              >
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" style={{ top: "calc(50% + 2px)" }} />
+                <input
+                  type="text"
+                  value={heroSearch}
+                  onChange={(e) => setHeroSearch(e.target.value)}
+                  placeholder="Search listings..."
+                  className="w-full rounded-full bg-background/10 backdrop-blur-sm border border-muted-foreground/30 py-2.5 pl-10 pr-24 text-sm text-primary-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+                <Button type="submit" size="sm" className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full gradient-accent border-0 text-xs px-4" style={{ top: "calc(50% + 2px)" }}>
+                  Search
+                </Button>
+              </form>
+                <div className="flex items-center gap-4 pt-2 text-xs" style={{ color: "hsl(220 15% 60%)" }}>
                 <div className="flex items-center gap-1.5">
                   <ShoppingBag className="h-3.5 w-3.5 text-accent" />
-                  <span>Vehicles & Auto parts</span>
+                  <span>Transport</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <ShoppingBag className="h-3.5 w-3.5 text-accent" />
-                  <span>Banking and Finanial Services</span>
+                  <span>Restaurants</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <ShoppingBag className="h-3.5 w-3.5 text-accent" />
-                  <span>Agriculture</span>
+                  <span>Telecommunications</span>
                 </div>
               </div>
             </div>
@@ -111,13 +140,13 @@ const HomePage = () => {
         <div className="container py-5">
           <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
             <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Popular:</span>
-            {categories?.slice(0, 8).map((cat) => (
+            {categories?.slice(0, 9).map((cat) => (
               <Link
                 key={cat.id}
                 to={`/marketplace?category=${cat.id}`}
                 className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border bg-secondary/50 px-4 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
               >
-                {cat.icon && <span>{cat.icon}</span>}
+                {(() => { const Icon = cat.icon ? chipIconMap[cat.icon] || Tag : null; return Icon ? <Icon className="h-3.5 w-3.5" /> : null; })()}
                 {cat.name}
               </Link>
             ))}

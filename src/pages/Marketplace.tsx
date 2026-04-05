@@ -12,8 +12,9 @@ const LOCATIONS = ["All Locations", "Mbabane", "Manzini", "Siteki", "Big Bend", 
 const MarketplacePage = () => {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
+  const searchParam = searchParams.get("search");
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParam || "");
   const [selectedCategory, setSelectedCategory] = useState(categoryParam || "all");
   const [selectedLocation, setSelectedLocation] = useState("All Locations");
 
