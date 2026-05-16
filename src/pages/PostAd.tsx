@@ -13,6 +13,29 @@ import { toast } from "sonner";
 
 const LOCATIONS = ["Mbabane", "Manzini", "Siteki", "Big Bend", "Nhlangano", "Matsapha", "Piggs Peak"];
 
+type Tier = "e500" | "e350" | "e250";
+const TIERS: { id: Tier; price: number; name: string; perks: string[]; highlight?: boolean }[] = [
+  {
+    id: "e500",
+    price: 500,
+    name: "Spotlight",
+    perks: ["Featured in the homepage hero", "Premium placement below the hero", "Maximum visibility"],
+    highlight: true,
+  },
+  {
+    id: "e350",
+    price: 350,
+    name: "Boosted",
+    perks: ["Featured strip on the homepage", "Shown above 'How It Works'", "Higher visibility than standard"],
+  },
+  {
+    id: "e250",
+    price: 250,
+    name: "Standard",
+    perks: ["Listed in the Latest Listings section", "Shown across the marketplace", "30-day listing"],
+  },
+];
+
 const PostAdPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -20,6 +43,8 @@ const PostAdPage = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedTier, setSubmittedTier] = useState<Tier>("e250");
+  const [tierSelected, setTierSelected] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
@@ -32,6 +57,7 @@ const PostAdPage = () => {
     phone: "",
     email: user?.email || "",
     location: "",
+    tier: "e250" as Tier,
   });
 
   const { data: categories } = useQuery({
@@ -48,6 +74,50 @@ const PostAdPage = () => {
       <div className="container py-20 text-center">
         <h2 className="text-2xl font-bold mb-4">Sign in to post an advertisement</h2>
         <Button onClick={() => navigate("/login")} className="gradient-primary border-0">Sign In</Button>
+      </div>
+    );
+  }
+
+  if (!tierSelected) {
+    return (
+      <div className="container max-w-5xl py-10">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">Choose Your Listing Plan</h1>
+          <p className="text-muted-foreground">Pick a plan to get started — you'll fill in your ad details next.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {TIERS.map((t) => (
+            <button
+              type="button"
+              key={t.id}
+              onClick={() => {
+                setForm((f) => ({ ...f, tier: t.id }));
+                setTierSelected(true);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`text-left rounded-xl border-2 p-6 transition-all hover:shadow-lg hover:-translate-y-0.5 ${
+                t.highlight ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold uppercase tracking-widest text-primary">{t.name}</span>
+                {t.highlight && (
+                  <span className="text-[10px] bg-accent text-accent-foreground px-2 py-0.5 rounded">BEST VALUE</span>
+                )}
+              </div>
+              <div className="text-4xl font-extrabold mt-2">E{t.price}</div>
+              <p className="text-xs text-muted-foreground mt-1">One-time · 30-day listing</p>
+              <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+                {t.perks.map((p) => (
+                  <li key={p} className="flex gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" /><span>{p}</span></li>
+                ))}
+              </ul>
+              <div className="mt-6 inline-flex items-center justify-center w-full rounded-md bg-primary text-primary-foreground h-10 font-medium">
+                Select {t.name}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     );
   }
@@ -103,9 +173,11 @@ const PostAdPage = () => {
         location: form.location,
         images: imageUrls,
         status: "pending_payment",
+        tier: form.tier,
       });
 
       if (error) throw error;
+      setSubmittedTier(form.tier);
       setSubmitted(true);
     } catch (err: any) {
       toast.error(err.message || "Failed to submit advertisement");
@@ -115,6 +187,7 @@ const PostAdPage = () => {
   };
 
   if (submitted) {
+    const tierInfo = TIERS.find((t) => t.id === submittedTier)!;
     return (
       <div className="container max-w-lg py-20 text-center animate-fade-in">
         <div className="rounded-full bg-success/10 p-4 w-fit mx-auto mb-6">
@@ -125,10 +198,14 @@ const PostAdPage = () => {
           <p className="text-muted-foreground">
             Your advertisement request has been received and is awaiting payment confirmation.
           </p>
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Selected Plan</p>
+            <p className="text-2xl font-bold text-primary">E{tierInfo.price} — {tierInfo.name}</p>
+          </div>
           <div className="bg-secondary/50 rounded-lg p-4">
             <p className="font-semibold mb-2">To activate your listing:</p>
             <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-              <li>Complete the advertisement listing payment</li>
+              <li>Pay <strong>E{tierInfo.price}</strong> for your {tierInfo.name} listing</li>
               <li>Send proof of payment via:</li>
             </ol>
             <div className="mt-3 space-y-1 text-sm">
@@ -149,8 +226,13 @@ const PostAdPage = () => {
 
   return (
     <div className="container max-w-2xl py-8">
-      <h1 className="text-3xl font-bold mb-2">Post an Advertisement</h1>
-      <p className="text-muted-foreground mb-8">Fill in the details below to submit your listing</p>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold">Post an Advertisement</h1>
+        <Button variant="ghost" size="sm" onClick={() => setTierSelected(false)}>← Change plan</Button>
+      </div>
+      <p className="text-muted-foreground mb-6">
+        Selected plan: <strong className="text-primary">E{TIERS.find(t => t.id === form.tier)!.price} — {TIERS.find(t => t.id === form.tier)!.name}</strong>
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">

@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { PopularChips } from "@/components/PopularChips";
 import { AdCard } from "@/components/AdCard";
 import { CategoryCard } from "@/components/CategoryCard";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,10 @@ import { Search, ArrowRight, TrendingUp, Users, ShoppingBag, FileText, CheckCirc
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Tag,
   Utensils, Heart, Scissors, Phone, TreePine, Landmark, Truck } from "lucide-react";
 import heroCollage from "@/assets/hero-collage.png";
+import heroBg from "@/assets/hero-bg.jpg";
+import { SearchAutocomplete } from "@/components/SearchAutocomplete";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Seo } from "@/hooks/useSeo";
 
 const chipIconMap: Record<string, React.ElementType> = {
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase,
@@ -16,8 +20,6 @@ const chipIconMap: Record<string, React.ElementType> = {
 };
 
 const HomePage = () => {
-  const [heroSearch, setHeroSearch] = useState("");
-  const navigate = useNavigate();
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -27,14 +29,15 @@ const HomePage = () => {
     },
   });
 
-  const { data: featuredAds } = useQuery({
-    queryKey: ["featured-ads"],
+  const { data: spotlightAds } = useQuery({
+    queryKey: ["spotlight-ads-e500"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("advertisements")
         .select("*, categories(name)")
         .eq("status", "approved")
-        .eq("is_featured", true)
+        .eq("tier", "e500")
+        .gte("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(4);
       if (error) throw error;
@@ -42,13 +45,31 @@ const HomePage = () => {
     },
   });
 
-  const { data: latestAds } = useQuery({
-    queryKey: ["latest-ads"],
+  const { data: boostedAds } = useQuery({
+    queryKey: ["boosted-ads-e350"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("advertisements")
         .select("*, categories(name)")
         .eq("status", "approved")
+        .eq("tier", "e350")
+        .gte("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(4);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: standardAds } = useQuery({
+    queryKey: ["standard-ads-e250"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("advertisements")
+        .select("*, categories(name)")
+        .eq("status", "approved")
+        .eq("tier", "e250")
+        .gte("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(8);
       if (error) throw error;
@@ -56,11 +77,47 @@ const HomePage = () => {
     },
   });
 
+  const heroSpotlights = spotlightAds?.slice(0, 4) ?? [];
+  const belowHeroSpotlights = spotlightAds?.slice(4, 7) ?? [];
+
   return (
     <div>
+      <Seo
+        title="Market Hub – Buy & Sell in Eswatini | Classifieds Marketplace"
+        description="Eswatini's #1 online marketplace. Browse cars, property, electronics, services and more across Mbabane, Manzini and beyond. Post free ads in minutes."
+        type="website"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Market Hub",
+          url: window.location.origin,
+          potentialAction: {
+            "@type": "SearchAction",
+            target: `${window.location.origin}/marketplace?search={search_term_string}`,
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
       {/* Hero */}
-      <section className="gradient-hero text-primary-foreground overflow-hidden">
-        <div className="container py-10 md:py-16">
+      <section className="gradient-hero text-primary-foreground overflow-hidden relative isolate">
+        {/* Responsive background image */}
+        <img
+          src={heroBg}
+          alt=""
+          aria-hidden="true"
+          width={1920}
+          height={1080}
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover -z-10"
+        />
+        {/* Contrast overlays for legible text */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-gradient-to-r from-background/90 via-background/70 to-background/40"
+        />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-background/30" />
+        <div className="container py-10 md:py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             {/* Left - Text */}
             <div className="space-y-4 animate-fade-in">
@@ -86,25 +143,7 @@ const HomePage = () => {
                   <Link to="/marketplace"><Search className="mr-1 h-4 w-4" /> Browse Marketplace</Link>
                 </Button>
               </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (heroSearch.trim()) navigate(`/marketplace?search=${encodeURIComponent(heroSearch.trim())}`);
-                }}
-                className="relative max-w-md pt-1"
-              >
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" style={{ top: "calc(50% + 2px)" }} />
-                <input
-                  type="text"
-                  value={heroSearch}
-                  onChange={(e) => setHeroSearch(e.target.value)}
-                  placeholder="Search listings..."
-                  className="w-full rounded-full bg-background/10 backdrop-blur-sm border border-muted-foreground/30 py-2.5 pl-10 pr-24 text-sm text-primary-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-                <Button type="submit" size="sm" className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full gradient-accent border-0 text-xs px-4" style={{ top: "calc(50% + 2px)" }}>
-                  Search
-                </Button>
-              </form>
+              <SearchAutocomplete className="max-w-md pt-1" />
                 <div className="flex items-center gap-4 pt-2 text-xs" style={{ color: "hsl(220 15% 60%)" }}>
                 <div className="flex items-center gap-1.5">
                   <ShoppingBag className="h-3.5 w-3.5 text-accent" />
@@ -122,37 +161,109 @@ const HomePage = () => {
             </div>
 
             {/* Right - Image */}
-            <div className="hidden md:flex justify-center items-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              <img
-                src={heroCollage}
-                alt="Marketplace items including vehicles, properties, agriculture and more"
-                width={1024}
-                height={1024}
-                className="w-full max-w-md object-contain drop-shadow-2xl"
-              />
+            <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
+              {heroSpotlights.length > 0 ? (
+                <>
+                  {/* Mobile: swipeable carousel */}
+                  <div className="md:hidden">
+                    <Carousel opts={{ loop: true, align: "start" }} className="w-full max-w-sm mx-auto">
+                      <CarouselContent className="-ml-3">
+                        {heroSpotlights.map((ad) => (
+                          <CarouselItem key={ad.id} className="pl-3 basis-1/2">
+                            <Link to={`/ad/${ad.id}`} className="group block">
+                              <div className="relative rounded-xl overflow-hidden border border-accent/40 shadow-lg shadow-accent/10 bg-card">
+                                <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
+                                <div className="aspect-[4/3] bg-muted overflow-hidden">
+                                  {ad.images?.[0] ? (
+                                    <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <img src={heroCollage} alt="Marketplace" className="w-full h-full object-cover" />
+                                  )}
+                                </div>
+                                <div className="p-2 bg-card text-foreground">
+                                  <h3 className="font-semibold text-xs line-clamp-1">{ad.title}</h3>
+                                  <p className="text-sm font-extrabold text-primary">E{ad.price.toLocaleString()}</p>
+                                </div>
+                              </div>
+                            </Link>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                    </Carousel>
+                  </div>
+                  {/* Desktop: 2x2 grid */}
+                  <div className="hidden md:grid grid-cols-2 gap-3 w-full max-w-md mx-auto">
+                    {heroSpotlights.map((ad) => (
+                      <Link key={ad.id} to={`/ad/${ad.id}`} className="group">
+                        <div className="relative rounded-xl overflow-hidden border border-accent/40 shadow-lg shadow-accent/10 bg-card">
+                          <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
+                          <div className="aspect-[4/3] bg-muted overflow-hidden">
+                            {ad.images?.[0] ? (
+                              <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            ) : (
+                              <img src={heroCollage} alt="Marketplace" className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <div className="p-2 bg-card text-foreground">
+                            <h3 className="font-semibold text-xs line-clamp-1">{ad.title}</h3>
+                            <p className="text-sm font-extrabold text-primary">E{ad.price.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <img
+                  src={heroCollage}
+                  alt="Marketplace items including vehicles, properties, agriculture and more"
+                  width={1024}
+                  height={1024}
+                  className="w-full max-w-md object-contain drop-shadow-2xl mx-auto"
+                />
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Quick-Access Category Chips */}
-      <section className="border-b bg-card">
-        <div className="container py-5">
-          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
-            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Popular:</span>
-            {categories?.slice(0, 9).map((cat) => (
-              <Link
-                key={cat.id}
-                to={`/marketplace?category=${cat.id}`}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border bg-secondary/50 px-4 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                {(() => { const Icon = cat.icon ? chipIconMap[cat.icon] || Tag : null; return Icon ? <Icon className="h-3.5 w-3.5" /> : null; })()}
-                {cat.name}
-              </Link>
-            ))}
+      {/* E500 Spotlight strip below hero */}
+      {belowHeroSpotlights.length > 0 && (
+        <section className="border-b bg-gradient-to-b from-accent/5 to-transparent">
+          <div className="container py-10">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-accent">★ Spotlight</span>
+                <h2 className="text-2xl md:text-3xl font-bold">Premium Listings</h2>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {belowHeroSpotlights.map((ad) => <AdCard key={ad.id} ad={ad} />)}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* E350 Boosted - right below hero */}
+      {boostedAds && boostedAds.length > 0 && (
+        <section className="bg-secondary/50">
+          <div className="container py-16">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-primary">Boosted</span>
+                <h2 className="text-2xl md:text-3xl font-bold">Featured Listings</h2>
+                <p className="text-muted-foreground mt-1">Handpicked ads from top sellers</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {boostedAds.map((ad) => <AdCard key={ad.id} ad={ad} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Quick-Access Category Chips */}
+      <PopularChips categories={categories} chipIconMap={chipIconMap} />
 
       {/* Stats */}
       <section className="border-b">
@@ -160,7 +271,7 @@ const HomePage = () => {
           <div className="grid grid-cols-3 gap-6 text-center">
             <div className="space-y-1">
               <ShoppingBag className="h-6 w-6 mx-auto text-primary" />
-              <p className="text-2xl font-bold">{latestAds?.length ?? 0}+</p>
+              <p className="text-2xl font-bold">{standardAds?.length ?? 0}+</p>
               <p className="text-xs text-muted-foreground">Active Listings</p>
             </div>
             <div className="space-y-1">
@@ -223,24 +334,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Featured */}
-      {featuredAds && featuredAds.length > 0 && (
-        <section className="bg-secondary/50">
-          <div className="container py-16">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold">Featured Listings</h2>
-                <p className="text-muted-foreground mt-1">Handpicked ads from top sellers</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {featuredAds.map((ad) => <AdCard key={ad.id} ad={ad} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Latest */}
+      {/* E250 Standard - Latest Listings */}
       <section className="container py-16">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -251,9 +345,9 @@ const HomePage = () => {
             <Link to="/marketplace">See All <ArrowRight className="ml-1 h-4 w-4" /></Link>
           </Button>
         </div>
-        {latestAds && latestAds.length > 0 ? (
+        {standardAds && standardAds.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {latestAds.map((ad) => <AdCard key={ad.id} ad={ad} />)}
+            {standardAds.map((ad) => <AdCard key={ad.id} ad={ad} />)}
           </div>
         ) : (
           <div className="text-center py-16 bg-secondary/30 rounded-xl">

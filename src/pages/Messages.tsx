@@ -24,22 +24,46 @@ const MessagesPage = () => {
   const { data: conversations, isLoading: convosLoading } = useQuery({
     queryKey: ["conversations", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: convos, error } = await supabase
         .from("conversations")
-        .select("*, advertisements(title, images), buyer:profiles!conversations_buyer_id_fkey(name), seller:profiles!conversations_seller_id_fkey(name)")
+        .select("*, advertisements(title, images)")
         .or(`buyer_id.eq.${user!.id},seller_id.eq.${user!.id}`)
         .order("updated_at", { ascending: false });
-      if (error) {
-        // Fallback without joins if foreign key names differ
-        const { data: fallback, error: err2 } = await supabase
-          .from("conversations")
-          .select("*, advertisements(title, images)")
-          .or(`buyer_id.eq.${user!.id},seller_id.eq.${user!.id}`)
-          .order("updated_at", { ascending: false });
-        if (err2) throw err2;
-        return fallback;
-      }
-      return data;
+      if (error) throw error;
+      if (!convos?.length) return [];
+
+      // Fetch profile names for the "other" participants
+      const otherIds = Array.from(new Set(
+        convos.map((c) => (c.buyer_id === user!.id ? c.seller_id : c.buyer_id))
+      ));
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .in("user_id", otherIds);
+      const nameMap = new Map((profiles ?? []).map((p) => [p.user_id, p.name]));
+
+      // Unread count per conversation (messages not from me, unread)
+      const convoIds = convos.map((c) => c.id);
+      const { data: unreadMsgs } = await supabase
+        .from("messages")
+        .select("conversation_id, sender_id, read")
+        .in("conversation_id", convoIds)
+        .eq("read", false);
+      const unreadMap = new Map<string, number>();
+      (unreadMsgs ?? []).forEach((m) => {
+        if (m.sender_id !== user!.id) {
+          unreadMap.set(m.conversation_id, (unreadMap.get(m.conversation_id) ?? 0) + 1);
+        }
+      });
+
+      return convos.map((c) => {
+        const otherId = c.buyer_id === user!.id ? c.seller_id : c.buyer_id;
+        return {
+          ...c,
+          otherName: nameMap.get(otherId) ?? "User",
+          unread: unreadMap.get(c.id) ?? 0,
+        };
+      });
     },
     enabled: !!user,
   });
@@ -118,8 +142,18 @@ const MessagesPage = () => {
                 onClick={() => navigate(`/messages?conversation=${c.id}`)}
                 className={`w-full text-left p-3 hover:bg-muted/50 transition-colors ${activeConvoId === c.id ? "bg-muted" : ""}`}
               >
-                <p className="font-medium text-sm line-clamp-1">{(c as any).advertisements?.title ?? "Listing"}</p>
-                <p className="text-xs text-muted-foreground">{format(new Date(c.updated_at), "MMM d, h:mm a")}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm line-clamp-1">{(c as any).otherName}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{(c as any).advertisements?.title ?? "Listing"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(c.updated_at), "MMM d, h:mm a")}</p>
+                  </div>
+                  {(c as any).unread > 0 && (
+                    <span className="h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                      {(c as any).unread}
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
           </div>

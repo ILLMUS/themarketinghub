@@ -15,6 +15,13 @@ import {
 import type { Database } from "@/integrations/supabase/types";
 
 type AdStatus = Database["public"]["Enums"]["ad_status"];
+type AdTier = Database["public"]["Enums"]["ad_tier"];
+
+const tierConfig: Record<AdTier, { label: string; price: number; className: string }> = {
+  e500: { label: "E500 Spotlight", price: 500, className: "bg-accent/20 text-accent-foreground border-accent" },
+  e350: { label: "E350 Boosted", price: 350, className: "bg-primary/15 text-primary border-primary/40" },
+  e250: { label: "E250 Standard", price: 250, className: "bg-muted text-muted-foreground border-border" },
+};
 
 const statusConfig: Record<AdStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending_payment: { label: "Pending Payment", variant: "outline" },
@@ -91,6 +98,18 @@ const AdminDashboard = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const updateTier = useMutation({
+    mutationFn: async ({ id, tier }: { id: string; tier: AdTier }) => {
+      const { error } = await supabase.from("advertisements").update({ tier }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ads"] });
+      toast.success("Tier updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const toggleRole = useMutation({
     mutationFn: async ({ userId, isCurrentlyAdmin }: { userId: string; isCurrentlyAdmin: boolean }) => {
       if (isCurrentlyAdmin) {
@@ -149,6 +168,7 @@ const AdminDashboard = () => {
             <th className="text-left p-3 font-medium">Title</th>
             <th className="text-left p-3 font-medium hidden md:table-cell">Category</th>
             <th className="text-left p-3 font-medium">Price</th>
+            <th className="text-left p-3 font-medium">Plan</th>
             <th className="text-left p-3 font-medium">Status</th>
             <th className="text-right p-3 font-medium">Actions</th>
           </tr>
@@ -164,6 +184,18 @@ const AdminDashboard = () => {
               </td>
               <td className="p-3 hidden md:table-cell text-muted-foreground">{ad.categories?.name}</td>
               <td className="p-3">E{ad.price.toLocaleString()}</td>
+              <td className="p-3">
+                <Select value={ad.tier} onValueChange={(v) => updateTier.mutate({ id: ad.id, tier: v as AdTier })}>
+                  <SelectTrigger className={`h-8 w-[140px] text-xs border ${tierConfig[ad.tier].className}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="e500">E500 Spotlight</SelectItem>
+                    <SelectItem value="e350">E350 Boosted</SelectItem>
+                    <SelectItem value="e250">E250 Standard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </td>
               <td className="p-3">
                 <Badge variant={statusConfig[ad.status].variant}>
                   {statusConfig[ad.status].label}

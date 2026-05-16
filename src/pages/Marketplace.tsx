@@ -6,6 +6,9 @@ import { AdCard } from "@/components/AdCard";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, SlidersHorizontal } from "lucide-react";
+import { Seo } from "@/hooks/useSeo";
+import { categoryOg } from "@/lib/ogImage";
+import { ShareButtons } from "@/components/ShareButtons";
 
 const LOCATIONS = ["All Locations", "Mbabane", "Manzini", "Siteki", "Big Bend", "Nhlangano", "Matsapha", "Piggs Peak"];
 
@@ -53,11 +56,61 @@ const MarketplacePage = () => {
     },
   });
 
+  const activeCategory = categories?.find((c) => c.id === selectedCategory);
+  const locationLabel = selectedLocation !== "All Locations" ? ` in ${selectedLocation}` : " in Eswatini";
+  const seoTitle = activeCategory
+    ? `${activeCategory.name}${locationLabel} – Buy & Sell | Market Hub`
+    : `Marketplace – Browse Listings in Eswatini | Market Hub`;
+  const seoDesc = activeCategory
+    ? `Browse ${ads?.length || ""} ${activeCategory.name} listings${locationLabel} on Market Hub. ${activeCategory.description || "Find great deals from local sellers."}`.trim()
+    : "Search thousands of ads in Eswatini: vehicles, property, electronics, jobs, services and more. Filter by category and location.";
+  const canonical = activeCategory
+    ? `${window.location.origin}/marketplace?category=${activeCategory.id}`
+    : `${window.location.origin}/marketplace`;
+  const seoImage = activeCategory
+    ? categoryOg(activeCategory.id, selectedLocation !== "All Locations" ? selectedLocation : undefined)
+    : undefined;
+  const jsonLd = activeCategory
+    ? {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: `${activeCategory.name} in Eswatini`,
+        description: seoDesc,
+        url: canonical,
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: ads?.length || 0,
+          itemListElement: (ads || []).slice(0, 20).map((a, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            url: `${window.location.origin}/ad/${a.id}`,
+            name: a.title,
+          })),
+        },
+      }
+    : undefined;
+
   return (
     <div className="container py-8">
+      <Seo
+        title={seoTitle}
+        description={seoDesc}
+        url={canonical}
+        image={seoImage}
+        jsonLd={jsonLd}
+      />
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Marketplace</h1>
-        <p className="text-muted-foreground">Browse listings across Eswatini</p>
+        <h1 className="text-3xl font-bold mb-2">
+          {activeCategory ? `${activeCategory.name}${locationLabel}` : "Marketplace"}
+        </h1>
+        <p className="text-muted-foreground">
+          {activeCategory ? (activeCategory.description || `Browse ${activeCategory.name} listings across Eswatini`) : "Browse listings across Eswatini"}
+        </p>
+        {activeCategory && (
+          <div className="mt-4">
+            <ShareButtons url={canonical} title={seoTitle} />
+          </div>
+        )}
       </div>
 
       {/* Filters */}

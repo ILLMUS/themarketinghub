@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryCard } from "@/components/CategoryCard";
+import { Seo } from "@/hooks/useSeo";
 
 const CategoriesPage = () => {
   const { data: categories, isLoading } = useQuery({
@@ -14,6 +15,23 @@ const CategoriesPage = () => {
 
   return (
     <div className="container py-8">
+      <Seo
+        title="All Categories – Browse Listings in Eswatini | Market Hub"
+        description="Explore every category on Market Hub: vehicles, property, electronics, jobs, services and more. Find what you need across Eswatini."
+        url={`${window.location.origin}/categories`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Marketplace Categories",
+          url: `${window.location.origin}/categories`,
+          hasPart: (categories || []).map((c) => ({
+            "@type": "CollectionPage",
+            name: c.name,
+            url: `${window.location.origin}/marketplace?category=${c.id}`,
+            description: c.description || `Browse ${c.name} listings in Eswatini.`,
+          })),
+        }}
+      />
       <h1 className="text-3xl font-bold mb-2">Categories</h1>
       <p className="text-muted-foreground mb-8">Browse listings by category</p>
 

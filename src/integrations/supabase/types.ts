@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           description: string
           email: string
+          expires_at: string | null
           id: string
           images: string[] | null
           is_featured: boolean
@@ -28,6 +29,7 @@ export type Database = {
           price: number
           seller_name: string
           status: Database["public"]["Enums"]["ad_status"]
+          tier: Database["public"]["Enums"]["ad_tier"]
           title: string
           updated_at: string
           user_id: string
@@ -37,6 +39,7 @@ export type Database = {
           created_at?: string
           description: string
           email: string
+          expires_at?: string | null
           id?: string
           images?: string[] | null
           is_featured?: boolean
@@ -45,6 +48,7 @@ export type Database = {
           price: number
           seller_name: string
           status?: Database["public"]["Enums"]["ad_status"]
+          tier?: Database["public"]["Enums"]["ad_tier"]
           title: string
           updated_at?: string
           user_id: string
@@ -54,6 +58,7 @@ export type Database = {
           created_at?: string
           description?: string
           email?: string
+          expires_at?: string | null
           id?: string
           images?: string[] | null
           is_featured?: boolean
@@ -62,6 +67,7 @@ export type Database = {
           price?: number
           seller_name?: string
           status?: Database["public"]["Enums"]["ad_status"]
+          tier?: Database["public"]["Enums"]["ad_tier"]
           title?: string
           updated_at?: string
           user_id?: string
@@ -100,6 +106,76 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          ad_id: string
+          buyer_id: string
+          created_at: string
+          id: string
+          seller_id: string
+          updated_at: string
+        }
+        Insert: {
+          ad_id: string
+          buyer_id: string
+          created_at?: string
+          id?: string
+          seller_id: string
+          updated_at?: string
+        }
+        Update: {
+          ad_id?: string
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          seller_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "advertisements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read: boolean
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -126,6 +202,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      saved_ads: {
+        Row: {
+          ad_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_ads_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "advertisements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -164,6 +269,7 @@ export type Database = {
         | "pending_approval"
         | "approved"
         | "rejected"
+      ad_tier: "e250" | "e350" | "e500"
       app_role: "admin" | "user"
     }
     CompositeTypes: {
@@ -298,6 +404,7 @@ export const Constants = {
         "approved",
         "rejected",
       ],
+      ad_tier: ["e250", "e350", "e500"],
       app_role: ["admin", "user"],
     },
   },

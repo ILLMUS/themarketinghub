@@ -3,9 +3,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSavedAds } from "@/hooks/useSavedAds";
+import { Seo } from "@/hooks/useSeo";
+import { adOg } from "@/lib/ogImage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, MessageCircle, MapPin, ArrowLeft, Share2, Calendar, Heart } from "lucide-react";
+import { Phone, MessageCircle, MapPin, ArrowLeft, Calendar, Heart } from "lucide-react";
+import { ShareButtons } from "@/components/ShareButtons";
 import { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -47,15 +50,6 @@ const AdDetailsPage = () => {
     enabled: !!ad,
   });
 
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard!");
-    } catch {
-      toast.error("Failed to copy link");
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="container py-8 animate-pulse">
@@ -81,8 +75,32 @@ const AdDetailsPage = () => {
     );
   }
 
+  const seoTitle = `${ad.title} – E${ad.price.toLocaleString()} in ${ad.location} | Market Hub`;
+  const seoDesc = (ad.description || "").replace(/\s+/g, " ").trim().slice(0, 160);
+  const seoImage = adOg(ad.id);
+  const canonical = `${window.location.origin}/ad/${ad.id}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: ad.title,
+    description: ad.description,
+    image: ad.images && ad.images.length > 0 ? ad.images : undefined,
+    category: ad.categories?.name,
+    sku: ad.id,
+    offers: {
+      "@type": "Offer",
+      price: ad.price,
+      priceCurrency: "SZL",
+      availability: "https://schema.org/InStock",
+      url: canonical,
+      areaServed: ad.location,
+      seller: { "@type": "Person", name: ad.seller_name },
+    },
+  };
+
   return (
     <div className="container py-8">
+      <Seo title={seoTitle} description={seoDesc} image={seoImage} url={canonical} type="product" jsonLd={jsonLd} />
       <Button variant="ghost" asChild className="mb-6">
         <Link to="/marketplace"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
       </Button>
@@ -140,7 +158,13 @@ const AdDetailsPage = () => {
                 <a href={`tel:${ad.phone}`}><Phone className="h-4 w-4 mr-2" /> Call Seller</a>
               </Button>
               <Button asChild variant="outline" className="flex-1 border-success text-success hover:bg-success hover:text-success-foreground">
-                <a href={`https://wa.me/${ad.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={`https://wa.me/${ad.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                    `Hi ${ad.seller_name}, I'm interested in your "${ad.title}" listed for E${ad.price.toLocaleString()} on The Market Hub (${window.location.href}). Is it still available?`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
                 </a>
               </Button>
@@ -173,20 +197,15 @@ const AdDetailsPage = () => {
                 <MessageCircle className="h-4 w-4 mr-2" /> Message Seller
               </Button>
             )}
-            <div className="flex gap-2">
-              {user && (
-                <Button
-                  variant="ghost"
-                  className="flex-1"
-                  onClick={() => toggleSave(ad.id)}
-                >
-                  <Heart className={`h-4 w-4 mr-2 ${isSaved(ad.id) ? "fill-destructive text-destructive" : ""}`} />
-                  {isSaved(ad.id) ? "Saved" : "Save"}
-                </Button>
-              )}
-              <Button variant="ghost" className={user ? "flex-1" : "w-full"} onClick={handleShare}>
-                <Share2 className="h-4 w-4 mr-2" /> Share
+            {user && (
+              <Button variant="ghost" className="w-full" onClick={() => toggleSave(ad.id)}>
+                <Heart className={`h-4 w-4 mr-2 ${isSaved(ad.id) ? "fill-destructive text-destructive" : ""}`} />
+                {isSaved(ad.id) ? "Saved" : "Save"}
               </Button>
+            )}
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground mb-2">Share this listing</p>
+              <ShareButtons url={canonical} title={`${ad.title} – E${ad.price.toLocaleString()} in ${ad.location}`} />
             </div>
           </div>
         </div>

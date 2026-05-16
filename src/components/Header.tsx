@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart } from "lucide-react";
 import { useState } from "react";
@@ -8,6 +9,7 @@ export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const unreadCount = useUnreadMessages();
 
   return (
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -49,8 +51,13 @@ export function Header() {
               <Button variant="ghost" size="sm" onClick={() => navigate("/saved")} title="Saved Ads">
                 <Heart className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/messages")} title="Messages">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/messages")} title="Messages" className="relative">
                 <MessageCircle className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate("/profile")} title="Profile">
                 <User className="h-4 w-4" />
@@ -100,6 +107,11 @@ export function Header() {
                 </Button>
                 <Button variant="outline" className="w-full" onClick={() => { navigate("/messages"); setMenuOpen(false); }}>
                   <MessageCircle className="h-4 w-4 mr-1" /> Messages
+                  {unreadCount > 0 && (
+                    <span className="ml-2 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={() => { navigate("/profile"); setMenuOpen(false); }}>
                   <User className="h-4 w-4 mr-1" /> Profile
