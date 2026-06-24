@@ -15,8 +15,12 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="gradient-primary rounded-lg p-2">
-            <Search className="h-5 w-5 text-primary-foreground" />
+          <div >
+            <img
+  src="/logo.png"
+  alt="The Market Hub"
+  className="h-10 w-10 object-contain"
+/>
           </div>
           <span className="text-xl font-heading font-bold">The Market Hub</span>
         </Link>
