@@ -13,4 +13,7 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://esw-market-hub.lovable.app/sitemap.xml
+Sitemap: https://themarkethubsz/sitemap.xml
+
+
+
