@@ -13,6 +13,7 @@ import {
   LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Tag, Shield, UserCheck,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import SEO from "@/components/seo/SEO";
 
 type AdStatus = Database["public"]["Enums"]["ad_status"];
 type AdTier = Database["public"]["Enums"]["ad_tier"];

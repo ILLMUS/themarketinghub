@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Send, ArrowLeft, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
+import SEO from "@/components/seo/SEO";
 
 const MessagesPage = () => {
   const { user, loading: authLoading } = useAuth();

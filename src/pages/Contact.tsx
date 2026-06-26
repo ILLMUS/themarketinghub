@@ -1,4 +1,5 @@
 import { Mail, Phone, MessageCircle, MapPin } from "lucide-react";
+import SEO from "@/components/seo/SEO";
 
 const ContactPage = () => {
   return (

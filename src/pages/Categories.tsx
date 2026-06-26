@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryCard } from "@/components/CategoryCard";
 import { Seo } from "@/hooks/useSeo";
+import SEO from "@/components/seo/SEO";
 
 const CategoriesPage = () => {
   const { data: categories, isLoading } = useQuery({

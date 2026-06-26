@@ -15,6 +15,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState } from "react";
 import { Seo } from "@/hooks/useSeo";
+import SEO from "@/components/seo/SEO";
 
 const chipIconMap: Record<string, React.ElementType> = {
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase,

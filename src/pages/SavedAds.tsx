@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSavedAds } from "@/hooks/useSavedAds";
 import { AdCard } from "@/components/AdCard";
 import { Loader2, Heart } from "lucide-react";
+import SEO from "@/components/seo/SEO";
 
 const SavedAdsPage = () => {
   const { user, loading: authLoading } = useAuth();

@@ -132,13 +132,22 @@ CREATE POLICY "Users can delete own ad images" ON storage.objects
   FOR DELETE USING (bucket_id = 'ad-images' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- Seed default categories
+-- Seed default categories
 INSERT INTO public.categories (name, description, icon) VALUES
-  ('Electronics', 'Phones, computers, gadgets and more', 'Smartphone'),
-  ('Vehicles', 'Cars, trucks, motorcycles and parts', 'Car'),
-  ('Property', 'Houses, apartments, land and commercial property', 'Home'),
+  ('Electronics', 'Phones, computers, gadgets and electronic devices', 'Laptop'),
+  ('Mobile Phones', 'Smartphones, feature phones and mobile accessories', 'Smartphone'),
+  ('Vehicles', 'Cars, trucks, motorcycles and vehicle parts', 'Car'),
+  ('Real Estate', 'Houses, apartments, land and commercial property', 'Home'),
   ('Construction', 'Building materials, tools and equipment', 'Hammer'),
-  ('Security Equipment', 'CCTV, alarms, access control', 'Shield'),
+  ('Agriculture', 'Farm equipment, seeds, fertilizers, produce and farming supplies', 'Wheat'),
+  ('Livestock', 'Cattle, goats, sheep, pigs, poultry and other livestock', 'Beef'),
+  ('Security Equipment', 'CCTV, alarms, access control and security systems', 'Shield'),
   ('Furniture', 'Home and office furniture', 'Sofa'),
-  ('Clothing', 'Fashion, shoes and accessories', 'Shirt'),
+  ('Clothing', 'New and second-hand clothing, shoes and accessories', 'Shirt'),
+  ('Fashion Dopha/Bales', 'Imported clothing bales, thrift clothing and fashion stock', 'ShoppingBag'),
+  ('Health & Beauty', 'Cosmetics, skincare, haircare, salons and beauty products', 'Heart'),
+  ('Perfumes', 'Perfumes, fragrances, body sprays and beauty scents', 'Sparkles'),
+  ('Entertainment/Events', 'Events, DJs, MCs, artists, venues and entertainment services', 'Music'),
   ('Services', 'Professional and personal services', 'Briefcase'),
-  ('Jobs', 'Employment opportunities and listings', 'Users');
+  ('Jobs', 'Employment opportunities and listings', 'Users'),
+  ('Loans & Financing', 'Personal, business and asset financing services', 'Banknote');

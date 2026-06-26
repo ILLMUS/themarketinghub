@@ -9,6 +9,7 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { Seo } from "@/hooks/useSeo";
 import { categoryOg } from "@/lib/ogImage";
 import { ShareButtons } from "@/components/ShareButtons";
+import SEO from "@/components/seo/SEO";
 
 const LOCATIONS = ["All Locations", "Mbabane", "Manzini", "Siteki", "Big Bend", "Nhlangano", "Matsapha", "Piggs Peak"];
 

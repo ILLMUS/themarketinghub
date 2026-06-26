@@ -96,11 +96,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
 
 -- Add expires_at to advertisements
 ALTER TABLE public.advertisements
-  ADD COLUMN expires_at TIMESTAMP WITH TIME ZONE DEFAULT (now() + interval '30 days');
+  ADD COLUMN expires_at TIMESTAMP WITH TIME ZONE DEFAULT (now() + interval '90 days');
 
 -- Update existing ads to have an expiry date
 UPDATE public.advertisements
-  SET expires_at = created_at + interval '30 days'
+  SET expires_at = created_at + interval '90 days'
   WHERE expires_at IS NULL;
 
 -- Create trigger for conversations updated_at

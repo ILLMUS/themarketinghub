@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/seo/SEO";
 
 interface SearchAutocompleteProps {
   className?: string;

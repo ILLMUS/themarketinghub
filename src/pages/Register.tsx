@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import SEO from "@/components/seo/SEO";
 
 const RegisterPage = () => {
   const { signUp } = useAuth();

@@ -12,6 +12,7 @@ import { ShareButtons } from "@/components/ShareButtons";
 import { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import SEO from "@/components/seo/SEO";
 
 const AdDetailsPage = () => {
   const { id } = useParams<{ id: string }>();

@@ -4,6 +4,7 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart } from "lucide-react";
 import { useState } from "react";
+import SEO from "@/components/seo/SEO";
 
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();

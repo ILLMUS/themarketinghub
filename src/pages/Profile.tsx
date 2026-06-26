@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, User } from "lucide-react";
+import SEO from "@/components/seo/SEO";
 
 const ProfilePage = () => {
   const { user, loading: authLoading } = useAuth();

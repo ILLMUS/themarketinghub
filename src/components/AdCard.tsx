@@ -3,6 +3,7 @@ import { MapPin, Heart } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useSavedAds } from "@/hooks/useSavedAds";
 import { useAuth } from "@/hooks/useAuth";
+import SEO from "@/components/seo/SEO";
 
 interface AdCardProps {
   ad: Tables<"advertisements"> & { categories?: { name: string } | null };

@@ -3,6 +3,7 @@ import {
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Users, Tag,
   Utensils, Heart, Scissors, Phone, TreePine, FileText, Landmark, Truck
 } from "lucide-react";
+import SEO from "@/components/seo/SEO";
 
 const iconMap: Record<string, React.ElementType> = {
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Users,
