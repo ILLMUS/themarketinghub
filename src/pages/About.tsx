@@ -1,11 +1,10 @@
 import { Helmet } from "react-helmet-async";
 import { Target, Users, TrendingUp } from "lucide-react";
-import SEO from "@/components/seo/SEO";
 
 const AboutPage = () => {
   return (
     <>
-      <Helmet>
+
         <title>About The Market Hub | Eswatini's Online Marketplace</title>
 
         <meta
@@ -69,7 +68,7 @@ const AboutPage = () => {
           name="twitter:image"
           content="https://themarkethubsz.com/og-image.jpg"
         />
-      </Helmet>
+  
 
       <div className="container py-16">
         <div className="max-w-5xl mx-auto">
