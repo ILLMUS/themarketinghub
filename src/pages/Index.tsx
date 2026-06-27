@@ -79,7 +79,24 @@ const HomePage = () => {
       return data;
     },
   });
+const { data: activeListingsCount = 0 } = useQuery({
+  queryKey: ["active-listings-count"],
+  queryFn: async () => {
+    const { count, error } = await supabase
+      .from("advertisements")
+      .select("*", {
+        count: "exact",
+        head: true,
+      })
+      .eq("status", "approved")
+      .in("tier", ["e250", "e350", "e500"])
+      .gte("expires_at", new Date().toISOString());
 
+    if (error) throw error;
+
+    return count ?? 0;
+  },
+});
   const heroSpotlights = spotlightAds ?? [];
   const belowHeroSpotlights: typeof heroSpotlights = [];
   const heroShouldSlide = heroSpotlights.length >= 5;
@@ -342,7 +359,9 @@ const HomePage = () => {
           <div className="grid grid-cols-3 gap-6 text-center">
             <div className="space-y-1">
               <ShoppingBag className="h-6 w-6 mx-auto text-primary" />
-              <p className="text-2xl font-bold">{standardAds?.length ?? 0}+</p>
+              <p className="text-2xl font-bold">
+              {activeListingsCount}+
+              </p>
               <p className="text-xs text-muted-foreground">Active Listings</p>
             </div>
             <div className="space-y-1">
