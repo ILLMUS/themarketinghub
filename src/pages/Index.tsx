@@ -319,7 +319,7 @@ const { data: activeListingsCount = 0 } = useQuery({
                 <p className="text-muted-foreground mt-1">Handpicked ads from top sellers</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
               {boostedAds.map((ad) => <AdCard key={ad.id} ad={ad} />)}
             </div>
           </div>
@@ -396,7 +396,7 @@ const { data: activeListingsCount = 0 } = useQuery({
           </Button>
         </div>
         {standardAds && standardAds.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
             {standardAds.map((ad) => <AdCard key={ad.id} ad={ad} />)}
           </div>
         ) : (
