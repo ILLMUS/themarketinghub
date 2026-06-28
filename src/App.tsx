@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import AdDetails from "./pages/AdDetails";
 import PostAd from "./pages/PostAd";
+
+import HowItWorks from "@/pages/HowItWorks";
+
 import Categories from "./pages/Categories";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -44,6 +47,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/saved" element={<SavedAds />} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

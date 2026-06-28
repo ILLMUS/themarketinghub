@@ -16,7 +16,7 @@ interface SEOProps {
 }
 
 const SITE_NAME = "The Market Hub";
-const SITE_URL = "https://themarkethubsz.com"; // Replace with your real domain
+const SITE_URL = "https://themarkethubsz.com"; 
 const DEFAULT_IMAGE = `${SITE_URL}/logo.png`;
 
 export default function SEO({

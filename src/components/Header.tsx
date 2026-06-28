@@ -37,6 +37,9 @@ export function Header() {
           <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             About
           </Link>
+                    <Link to="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            How It Works
+          </Link>
           <Link to="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Contact
           </Link>
@@ -94,6 +97,7 @@ export function Header() {
         <div className="md:hidden border-t bg-card p-4 space-y-3 animate-fade-in">
           <Link to="/marketplace" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>Marketplace</Link>
           <Link to="/categories" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>Categories</Link>
+          <Link to="/how-it-works" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>How It Works</Link>
           <Link to="/about" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>About</Link>
           <Link to="/contact" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>Contact</Link>
           <div className="pt-2 border-t space-y-2">

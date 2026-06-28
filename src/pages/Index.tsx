@@ -123,8 +123,21 @@ const { data: activeListingsCount = 0 } = useQuery({
           },
         }}
       />
+
+
+
       {/* Hero */}
       <section className="gradient-hero text-primary-foreground overflow-hidden relative isolate">
+
+      {/* Search */}
+     <SearchAutocomplete
+    className="max-w-md mx-auto pt-1 pb-1"/>
+
+
+      {/* Quick-Access Category Chips */}
+      <PopularChips categories={categories} chipIconMap={chipIconMap} />
+
+
         {/* Responsive background image */}
         <img
           src={heroBg}
@@ -138,46 +151,9 @@ const { data: activeListingsCount = 0 } = useQuery({
         />
         <div className="container py-10 md:py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            {/* Left - Text */}
-            <div className="space-y-4 animate-fade-in">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-primary-foreground/80">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
-                </span>
-                Eswatini's #1 Marketplace
-              </div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight">
-                Discover & Promote Local Businesses Across{" "}
-                <span className="text-gradient">Eswatini</span>
-              </h1>
-              <p className="text-sm md:text-base max-w-md" style={{ color: "hsl(220 15% 70%)" }}>
-                Buy, sell, and advertise products and services — from vehicles and property to agriculture and more.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <Button size="default" asChild className="gradient-primary border-0 text-sm px-6 shadow-lg shadow-primary/25">
-                  <Link to="/post-ad">Post Your Ad <ArrowRight className="ml-1 h-4 w-4" /></Link>
-                </Button>
-                <Button size="default" variant="outline" asChild className="text-sm px-6 border-muted-foreground/30 hover:bg-muted/10" style={{ color: "hsl(220 15% 80%)" }}>
-                  <Link to="/marketplace"><Search className="mr-1 h-4 w-4" /> Browse Marketplace</Link>
-                </Button>
-              </div>
-              <SearchAutocomplete className="max-w-md pt-1" />
-                <div className="flex items-center gap-4 pt-2 text-xs" style={{ color: "hsl(220 15% 60%)" }}>
-                <div className="flex items-center gap-1.5">
-                  <ShoppingBag className="h-3.5 w-3.5 text-accent" />
-                  <span>Transport</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <ShoppingBag className="h-3.5 w-3.5 text-accent" />
-                  <span>Restaurants</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <ShoppingBag className="h-3.5 w-3.5 text-accent" />
-                  <span>Telecommunications</span>
-                </div>
-              </div>
-            </div>
+            
+            
+
 
             {/* Right - Image */}
             <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
@@ -350,8 +326,7 @@ const { data: activeListingsCount = 0 } = useQuery({
         </section>
       )}
 
-      {/* Quick-Access Category Chips */}
-      <PopularChips categories={categories} chipIconMap={chipIconMap} />
+
 
       {/* Stats */}
       <section className="border-b">
@@ -407,22 +382,7 @@ const { data: activeListingsCount = 0 } = useQuery({
         </div>
       </section>
 
-      <section className="container py-16">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold">Browse by Category</h2>
-            <p className="text-muted-foreground mt-1">Find exactly what you're looking for</p>
-          </div>
-          <Button variant="ghost" asChild>
-            <Link to="/categories">View All <ArrowRight className="ml-1 h-4 w-4" /></Link>
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {categories?.slice(0, 10).map((cat) => (
-            <CategoryCard key={cat.id} id={cat.id} name={cat.name} icon={cat.icon} description={cat.description} />
-          ))}
-        </div>
-      </section>
+
 
       {/* E250 Standard - Latest Listings */}
       <section className="container py-16">
