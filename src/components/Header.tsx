@@ -2,15 +2,62 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { Button } from "@/components/ui/button";
-import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart } from "lucide-react";
-import { useState } from "react";
-import SEO from "@/components/seo/SEO";
+import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart, Users, Building } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { ChevronRight } from "lucide-react";
+
+import {
+
+  Laptop,
+  Wheat,
+  Beef,
+  Banknote,
+  Sparkles,
+  Music,
+} from "lucide-react";
 
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<any>(null);
   const unreadCount = useUnreadMessages();
+
+const iconMap = {
+  electronics: Laptop,
+  vehicles: Banknote,
+  jobs: Users,
+  construction: Building,
+  health_beauty: Heart,
+};
+  
+  const { data: categories } = useQuery({
+  queryKey: ["header-categories"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+     .from("categories")
+     
+.select(`
+  id,
+  name,
+  icon,
+  subcategories (
+    id,
+    name,
+    icon
+  )
+`)
+.order("name");
+
+
+
+    if (error) throw error;
+
+    return data;
+  },
+});
 
   return (
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -31,9 +78,128 @@ export function Header() {
           <Link to="/marketplace" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Marketplace
           </Link>
-          <Link to="/categories" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Categories
-          </Link>
+         <div className="relative group">
+  <Link
+    to="/categories"
+    className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+  >
+    Categories
+  </Link>
+
+  {
+<div
+  className="
+    absolute
+    top-full
+    left-1/2
+    -translate-x-1/2
+    mt-2
+    w-72
+    rounded-xl
+    border
+    bg-card
+    shadow-xl
+
+    opacity-0
+    invisible
+    translate-y-2
+
+    group-hover:opacity-100
+    group-hover:visible
+    group-hover:translate-y-0
+
+    transition-all
+    duration-200
+    z-50
+  "
+>
+
+<div className="flex">
+
+  {/* LEFT SIDE */}
+
+  <div className="w-64 border-r">
+    <div className="w-64 border-r max-h-[70vh] overflow-y-auto">
+    {categories?.map(category => (
+
+      <button
+        key={category.id}
+        onMouseEnter={() => setActiveCategory(category)}
+        className="group/item flex justify-between items-center w-full px-4 py-3 hover:bg-muted"
+      >
+
+        <span>{category.name}</span>
+
+        <ChevronRight
+          className="
+            h-4
+            w-4
+            opacity-0
+            transition-all
+            duration-200
+            group-hover/item:opacity-100
+            group-hover/item:translate-x-1
+          "
+        />
+
+      </button>
+
+    ))}
+    </div>
+  </div>
+
+  {/* RIGHT SIDE */}
+
+ <div className="min-w-[450px] border-l bg-card p-5">
+
+    {activeCategory && (
+
+      <>
+        <h3 className="font-semibold mb-3">
+
+          {activeCategory.name}
+
+        </h3>
+
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+
+          {activeCategory.subcategories?.map((sub: any) => (
+
+            <Link
+  key={sub.id}
+  to={`/marketplace?subcategory=${sub.id}`}
+  className="
+    flex
+    items-center
+    rounded-lg
+    px-3
+    py-2
+    text-sm
+    transition-all
+    duration-200
+    hover:bg-muted
+    hover:text-primary
+  "
+>
+  {sub.name}
+</Link>
+
+          ))}
+
+        </div>
+
+      </>
+
+    )}
+
+  </div>
+
+</div>
+
+
+</div>
+  }
+</div>
           <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             About
           </Link>
