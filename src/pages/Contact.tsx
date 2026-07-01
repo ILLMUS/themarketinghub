@@ -14,9 +14,38 @@ const ContactPage = () => {
           href="https://wa.me/26876373859"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-4 border rounded-xl p-6 bg-card hover:shadow-md transition-shadow"
-        >
-          <div className="rounded-xl bg-success/10 p-3">
+          
+            className="
+            group
+            flex
+            items-center
+            gap-4
+            rounded-xl
+            border
+            bg-card
+            p-6
+
+            transition-all
+            duration-300
+
+            hover:-translate-y-1
+            hover:border-primary/40
+            hover:shadow-xl
+            "
+             >
+          <div
+          className="
+            rounded-xl
+            bg-success/10
+            p-3
+
+            transition-all
+            duration-300
+
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+              >
             <MessageCircle className="h-6 w-6 text-success" />
           </div>
           <div>

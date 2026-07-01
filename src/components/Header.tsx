@@ -7,7 +7,18 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronRight } from "lucide-react";
-
+import { DesktopNavItem } from "@/components/navigation/DesktopNavItem";
+import {
+  Target,
+  TrendingUp,
+} from "lucide-react";
+import {
+  PlusCircle,
+  BadgeCheck,
+   MapPin,
+   Phone,
+   Mail
+} from "lucide-react";
 import {
 
   Laptop,
@@ -23,7 +34,31 @@ export function Header() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<any>(null);
+  
   const unreadCount = useUnreadMessages();
+
+  const { data: latestAds } = useQuery({
+  queryKey: ["header-latest-ads"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("advertisements")
+      .select(`
+        id,
+        title,
+        price,
+        images,
+        location
+      `)
+      .eq("status", "approved")
+      .gte("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(4);
+
+    if (error) throw error;
+
+    return data;
+  },
+});
 
 const iconMap = {
   electronics: Laptop,
@@ -75,9 +110,157 @@ const iconMap = {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/marketplace" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Marketplace
-          </Link>
+
+        <DesktopNavItem title="Marketplace" to="/marketplace">
+         <div className="w-[430px] rounded-2xl border bg-card shadow-2xl overflow-hidden">
+
+  {/* Header */}
+
+  <div className="border-b px-6 py-4">
+
+    <h3 className="font-semibold text-lg">
+      Latest Listings
+    </h3>
+
+    <p className="text-sm text-muted-foreground">
+      Freshly posted items from across Eswatini
+    </p>
+
+  </div>
+
+  {/* Listings */}
+
+  <div className="p-3">
+
+    {latestAds?.map((ad) => (
+
+      <Link
+        key={ad.id}
+        to={`/ad/${ad.id}`}
+        className="
+          group
+          flex
+          gap-4
+          rounded-xl
+          p-3
+          transition-all
+          duration-300
+          hover:bg-muted/60
+        "
+      >
+
+        {/* Image */}
+
+        <div
+          className="
+            h-16
+            w-16
+            overflow-hidden
+            rounded-xl
+            bg-muted
+            flex-shrink-0
+          "
+        >
+
+          <img
+            src={ad.images?.[0] || "/placeholder.svg"}
+            alt={ad.title}
+            className="
+              h-full
+              w-full
+              object-cover
+              transition-transform
+              duration-300
+              group-hover:scale-110
+            "
+          />
+
+        </div>
+
+        {/* Content */}
+
+        <div className="flex flex-1 flex-col justify-center">
+
+          <h4
+            className="
+              line-clamp-1
+              font-medium
+              transition-colors
+              duration-300
+              group-hover:text-primary
+            "
+          >
+            {ad.title}
+          </h4>
+
+          <p className="text-sm font-semibold mt-1">
+
+            E{Number(ad.price).toLocaleString()}
+
+          </p>
+
+          <span
+            className="
+              mt-2
+              text-xs
+              text-muted-foreground
+              transition-all
+              duration-300
+              group-hover:translate-x-1
+              group-hover:text-primary
+            "
+          >
+            View Details →
+          </span>
+
+        </div>
+
+      </Link>
+
+    ))}
+
+  </div>
+
+  {/* Footer */}
+
+  <div className="border-t px-6 py-4">
+
+    <Link
+      to="/marketplace"
+      className="
+        flex
+        items-center
+        justify-between
+        rounded-xl
+        bg-primary/5
+        px-4
+        py-3
+        transition-all
+        duration-300
+        hover:bg-primary/10
+      "
+    >
+
+      <div>
+
+        <p className="font-medium">
+          Explore the Marketplace
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          Browse every available listing
+        </p>
+
+      </div>
+
+      <ChevronRight className="h-5 w-5" />
+
+    </Link>
+
+  </div>
+
+</div>
+          </DesktopNavItem>
          <div className="relative group">
   <Link
     to="/categories"
@@ -200,15 +383,700 @@ const iconMap = {
 </div>
   }
 </div>
-          <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            About
-          </Link>
-                    <Link to="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            How It Works
-          </Link>
-          <Link to="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Contact
-          </Link>
+<DesktopNavItem title="About" to="/about">
+  <div className="w-[760px] rounded-2xl border bg-card shadow-2xl p-8">
+
+    {/* Header */}
+    <div className="text-center mb-8">
+      <h3 className="text-2xl font-bold">
+        About The Market Hub
+      </h3>
+
+      <p className="mt-3 text-sm text-muted-foreground max-w-2xl mx-auto leading-6">
+        Eswatini's premier digital marketplace connecting businesses,
+        entrepreneurs and customers through one modern platform.
+      </p>
+    </div>
+
+    {/* Three Columns */}
+
+    <div className="grid grid-cols-3 gap-8">
+
+      {/* Mission */}
+
+      <div
+        className="
+          group
+          rounded-xl
+          p-4
+          transition-all
+          duration-300
+          hover:bg-muted/60
+        "
+      >
+        <div
+          className="
+            mb-4
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-xl
+            bg-primary/10
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <Target className="h-7 w-7 text-primary" />
+        </div>
+
+        <h4 className="font-semibold mb-2">
+          Our Mission
+        </h4>
+
+        <p className="text-sm text-muted-foreground">
+          Empower individuals and businesses with a trusted digital
+          marketplace.
+        </p>
+      </div>
+
+      {/* Community */}
+
+      <div
+        className="
+          group
+          rounded-xl
+          p-4
+          transition-all
+          duration-300
+          hover:bg-muted/60
+        "
+      >
+        <div
+          className="
+            mb-4
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-xl
+            bg-primary/10
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <Users className="h-7 w-7 text-primary" />
+        </div>
+
+        <h4 className="font-semibold mb-2">
+          Our Community
+        </h4>
+
+        <p className="text-sm text-muted-foreground">
+          Connecting buyers, sellers and entrepreneurs across Eswatini.
+        </p>
+      </div>
+
+      {/* Vision */}
+
+      <div
+        className="
+          group
+          rounded-xl
+          p-4
+          transition-all
+          duration-300
+          hover:bg-muted/60"
+        >
+        <div
+          className="
+            mb-4
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-xl
+            bg-primary/10
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <TrendingUp className="h-7 w-7 text-primary" />
+        </div>
+
+        <h4 className="font-semibold mb-2">
+          Our Vision
+        </h4>
+
+        <p className="text-sm text-muted-foreground">
+          Building Southern Africa's most trusted digital marketplace.
+        </p>
+      </div>
+
+    </div>
+
+    {/* Footer */}
+
+    <div className="mt-8 border-t pt-5 flex items-center justify-between">
+
+      <div>
+        <p className="font-medium">
+          Learn more about our journey
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          Discover who we are and why thousands trust Market Hub.
+        </p>
+      </div>
+
+      <Link
+        to="/about"
+        className="
+          rounded-lg
+          bg-primary
+          px-5
+          py-2.5
+          text-sm
+          font-medium
+          text-primary-foreground
+          transition-all
+          duration-300
+          hover:scale-105
+        "
+      >
+        Learn More
+      </Link>
+
+    </div>
+
+  </div>
+</DesktopNavItem>
+
+
+<DesktopNavItem
+  title="How It Works"
+  to="/how-it-works"
+>
+  <div className="w-[850px] rounded-2xl border bg-card shadow-2xl overflow-hidden">
+
+    {/* Header */}
+
+    <div className="px-8 py-7 text-center border-b">
+
+      <h3 className="text-3xl font-bold">
+        How The Market Hub Works
+      </h3>
+
+      <p className="mt-3 max-w-2xl mx-auto text-muted-foreground">
+        Buying and selling across Eswatini has never been easier.
+        Follow these simple steps to advertise your products,
+        connect with buyers and complete successful sales.
+      </p>
+
+    </div>
+
+    {/* Steps */}
+
+    <div className="grid grid-cols-4 gap-6 p-8">
+
+      {/* Step 1 */}
+
+      <div
+        className="
+          group
+          rounded-xl
+          p-5
+          transition-all
+          duration-300
+          hover:bg-muted/60
+          hover:-translate-y-1
+        "
+      >
+
+        <div
+          className="
+            mb-5
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-xl
+            bg-primary/10
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <PlusCircle className="h-7 w-7 text-primary" />
+        </div>
+
+        <span className="text-xs font-semibold text-primary">
+          STEP 01
+        </span>
+
+        <h4 className="mt-2 font-semibold">
+          Post Your Ad
+        </h4>
+
+        <p className="mt-2 text-sm text-muted-foreground leading-6">
+          Create your listing by adding photos,
+          pricing, category and a detailed description.
+        </p>
+
+      </div>
+
+      {/* Step 2 */}
+
+      <div
+        className="
+          group
+          rounded-xl
+          p-5
+          transition-all
+          duration-300
+          hover:bg-muted/60
+          hover:-translate-y-1
+        "
+      >
+
+        <div
+          className="
+            mb-5
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-xl
+            bg-primary/10
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <Search className="h-7 w-7 text-primary" />
+        </div>
+
+        <span className="text-xs font-semibold text-primary">
+          STEP 02
+        </span>
+
+        <h4 className="mt-2 font-semibold">
+          Reach Buyers
+        </h4>
+
+        <p className="mt-2 text-sm text-muted-foreground leading-6">
+          Thousands of buyers browse The Market Hub every day looking for products and services.
+        </p>
+
+      </div>
+
+      {/* Step 3 */}
+
+      <div
+        className="
+          group
+          rounded-xl
+          p-5
+          transition-all
+          duration-300
+          hover:bg-muted/60
+          hover:-translate-y-1
+        "
+      >
+
+        <div
+          className="
+            mb-5
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-xl
+            bg-primary/10
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <MessageCircle className="h-7 w-7 text-primary" />
+        </div>
+
+        <span className="text-xs font-semibold text-primary">
+          STEP 03
+        </span>
+
+        <h4 className="mt-2 font-semibold">
+          Connect Instantly
+        </h4>
+
+        <p className="mt-2 text-sm text-muted-foreground leading-6">
+          Buyers contact you directly through WhatsApp,
+          phone or secure in-app messaging.
+        </p>
+
+      </div>
+
+      {/* Step 4 */}
+
+      <div
+        className="
+          group
+          rounded-xl
+          p-5
+          transition-all
+          duration-300
+          hover:bg-muted/60
+          hover:-translate-y-1
+        "
+      >
+
+        <div
+          className="
+            mb-5
+            flex
+            h-14
+            w-14
+            items-center
+            justify-center
+            rounded-xl
+            bg-primary/10
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <BadgeCheck className="h-7 w-7 text-primary" />
+        </div>
+
+        <span className="text-xs font-semibold text-primary">
+          STEP 04
+        </span>
+
+        <h4 className="mt-2 font-semibold">
+          Complete Your Sale
+        </h4>
+
+        <p className="mt-2 text-sm text-muted-foreground leading-6">
+          Meet safely, finalise the transaction and grow your business with confidence.
+        </p>
+
+      </div>
+
+    </div>
+
+    {/* Footer */}
+
+    <div className="border-t px-8 py-5 flex items-center justify-between">
+
+      <div>
+
+        <p className="font-semibold">
+          Ready to reach thousands of buyers?
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          Start advertising today or explore listings from across Eswatini.
+        </p>
+
+      </div>
+
+      <div className="flex gap-3">
+
+        <Button
+          className="gradient-primary border-0"
+          onClick={() => navigate("/post-ad")}
+        >
+          Start Selling
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={() => navigate("/marketplace")}
+        >
+          Browse Marketplace
+        </Button>
+
+      </div>
+
+    </div>
+
+  </div>
+</DesktopNavItem>
+
+<DesktopNavItem
+  title="Contact"
+  to="/contact"
+>
+  <div className="w-[700px] rounded-2xl border bg-card shadow-2xl overflow-hidden">
+
+    {/* Header */}
+
+    <div className="border-b px-8 py-6 text-center">
+
+      <h3 className="text-2xl font-bold">
+        Contact The Market Hub
+      </h3>
+
+      <p className="mt-2 text-muted-foreground max-w-xl mx-auto">
+        Have questions or need help? Reach out to our team using any of the
+        contact methods below.
+      </p>
+
+    </div>
+
+    {/* Contact Cards */}
+
+    <div className="grid grid-cols-2 gap-5 p-6">
+
+      {/* WhatsApp */}
+
+      <a
+        href="https://wa.me/26876373859"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="
+          group
+          flex
+          items-center
+          gap-4
+          rounded-xl
+          border
+          p-5
+          transition-all
+          duration-300
+          hover:-translate-y-1
+          hover:border-primary/40
+          hover:shadow-lg
+        "
+      >
+
+        <div
+          className="
+            rounded-xl
+            bg-green-500/10
+            p-3
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <MessageCircle className="h-6 w-6 text-green-600" />
+        </div>
+
+        <div>
+
+          <h4 className="font-semibold group-hover:text-primary transition-colors">
+            WhatsApp
+          </h4>
+
+          <p className="text-sm text-muted-foreground">
+            +268 7637 3859
+          </p>
+
+        </div>
+
+      </a>
+
+      {/* Email */}
+
+      <a
+        href="mailto:themarkethub51@gmail.com"
+        className="
+          group
+          flex
+          items-center
+          gap-4
+          rounded-xl
+          border
+          p-5
+          transition-all
+          duration-300
+          hover:-translate-y-1
+          hover:border-primary/40
+          hover:shadow-lg
+        "
+      >
+
+        <div
+          className="
+            rounded-xl
+            bg-primary/10
+            p-3
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <Mail className="h-6 w-6 text-primary" />
+        </div>
+
+        <div>
+
+          <h4 className="font-semibold group-hover:text-primary transition-colors">
+            Email
+          </h4>
+
+          <p className="text-sm text-muted-foreground">
+            themarkethub51@gmail.com
+          </p>
+
+        </div>
+
+      </a>
+
+      {/* Phone */}
+
+      <a
+        href="tel:+26876373859"
+        className="
+          group
+          flex
+          items-center
+          gap-4
+          rounded-xl
+          border
+          p-5
+          transition-all
+          duration-300
+          hover:-translate-y-1
+          hover:border-primary/40
+          hover:shadow-lg
+        "
+      >
+
+        <div
+          className="
+            rounded-xl
+            bg-primary/10
+            p-3
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <Phone className="h-6 w-6 text-primary" />
+        </div>
+
+        <div>
+
+          <h4 className="font-semibold group-hover:text-primary transition-colors">
+            Phone
+          </h4>
+
+          <p className="text-sm text-muted-foreground">
+            +268 7637 3859
+          </p>
+
+        </div>
+
+      </a>
+
+      {/* Location */}
+
+      <div
+        className="
+          group
+          flex
+          items-center
+          gap-4
+          rounded-xl
+          border
+          p-5
+          transition-all
+          duration-300
+          hover:-translate-y-1
+          hover:border-primary/40
+          hover:shadow-lg
+        "
+      >
+
+        <div
+          className="
+            rounded-xl
+            bg-primary/10
+            p-3
+            transition-all
+            duration-300
+            group-hover:scale-110
+            group-hover:rotate-6
+          "
+        >
+          <MapPin className="h-6 w-6 text-primary" />
+        </div>
+
+        <div>
+
+          <h4 className="font-semibold group-hover:text-primary transition-colors">
+            Location
+          </h4>
+
+          <p className="text-sm text-muted-foreground">
+            Eswatini
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    {/* Footer */}
+
+    <div className="border-t px-8 py-5 flex items-center justify-between">
+
+      <div>
+
+        <p className="font-semibold">
+          Need more assistance?
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          Visit our contact page for all available support channels.
+        </p>
+
+      </div>
+
+      <Link
+        to="/contact"
+        className="
+          rounded-lg
+          bg-primary
+          px-5
+          py-2.5
+          text-sm
+          font-medium
+          text-primary-foreground
+          transition-all
+          duration-300
+          hover:scale-105
+        "
+      >
+        Contact Us
+      </Link>
+
+    </div>
+
+  </div>
+</DesktopNavItem>
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
