@@ -80,25 +80,46 @@ const AdDetailsPage = () => {
   const seoDesc = (ad.description || "").replace(/\s+/g, " ").trim().slice(0, 160);
   const seoImage = adOg(ad.id);
   const canonical = `${window.location.origin}/ad/${ad.id}`;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: ad.title,
-    description: ad.description,
-    image: ad.images && ad.images.length > 0 ? ad.images : undefined,
-    category: ad.categories?.name,
-    sku: ad.id,
-    offers: {
-      "@type": "Offer",
-      price: ad.price,
-      priceCurrency: "SZL",
-      availability: "https://schema.org/InStock",
-      url: canonical,
-      areaServed: ad.location,
-      seller: { "@type": "Person", name: ad.seller_name },
-    },
-  };
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
 
+  url: canonical,
+
+  name: ad.title,
+
+  description: ad.description,
+
+  image: ad.images?.length ? ad.images : undefined,
+
+  category: ad.categories?.name,
+
+  sku: ad.id,
+
+  brand: {
+    "@type": "Brand",
+    name: "The Market Hub",
+  },
+
+  offers: {
+    "@type": "Offer",
+
+    price: ad.price,
+
+    priceCurrency: "SZL",
+
+    availability: "https://schema.org/InStock",
+
+    itemCondition: "https://schema.org/UsedCondition",
+
+    url: canonical,
+
+    seller: {
+      "@type": "Person",
+      name: ad.seller_name,
+    },
+  },
+};
   return (
     <div className="container py-8">
       <Seo title={seoTitle} description={seoDesc} image={seoImage} url={canonical} type="product" jsonLd={jsonLd} />

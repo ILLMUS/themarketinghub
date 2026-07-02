@@ -10,10 +10,7 @@
  content="The Market Hub is Eswatini's online marketplace for buying, selling, property, vehicles, electronics, jobs and local services. Connect with trusted sellers across Eswatini."
 />
 
-<meta
- name="keywords"
- content="buy and sell Eswatini, marketplace Eswatini, online classifieds Eswatini, property Eswatini, cars for sale Eswatini, jobs Eswatini, electronics Eswatini, The Market Hub"
-/>
+
 
   <meta name="author" content="The Market Hub" />
 
@@ -66,19 +63,49 @@
   <!-- Marketplace Structured Data -->
 
   <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"WebSite",
-    "name":"The Market Hub",
-    "url":"https://themarkethubsz.com",
-    "description":"Eswatini's online marketplace for buying and selling products and services.",
-    "potentialAction":{
-      "@type":"SearchAction",
-      "target":"https://themarkethubsz.com/search?q={search_term_string}",
-      "query-input":"required name=search_term_string"
-    }
+ {
+  "@context":"https://schema.org",
+  "@type":"Product",
+
+  "name":"Toyota Hilux GD6",
+
+  "description":"Excellent condition with low mileage.",
+
+  "image":[
+      "https://..."
+  ],
+
+  "category":"Vehicles",
+
+  "brand":{
+      "@type":"Brand",
+      "name":"Toyota"
+  },
+
+  "offers":{
+      "@type":"Offer",
+
+      "price":"285000",
+
+      "priceCurrency":"SZL",
+
+      "availability":"https://schema.org/InStock",
+
+      "url":"https://themarkethubsz.com/ad/xxxxx"
   }
+}
   </script>
+
+  
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9VJR7BZ4Q"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-S9VJR7BZ4Q');
+</script>
 
 </head>
 
