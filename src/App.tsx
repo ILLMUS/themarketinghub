@@ -47,7 +47,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/saved" element={<SavedAds />} />
-
+<Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
