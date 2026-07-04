@@ -23,6 +23,7 @@ import Messages from "./pages/Messages";
 import SavedAds from "./pages/SavedAds";
 import NotFound from "./pages/NotFound";
 
+import ComingSoon from "./pages/ComingSoon";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -47,8 +48,19 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/saved" element={<SavedAds />} />
-<Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="*" element={<NotFound />} />
+
+               {/* Coming Soon */}
+
+              <Route path="/buying-guide" element={<ComingSoon />} />
+              <Route path="/selling-guide" element={<ComingSoon />} />
+              <Route path="/privacy-policy" element={<ComingSoon />} />
+              <Route path="/terms-and-conditions" element={<ComingSoon />} />
+              <Route path="/report-listing" element={<ComingSoon />} />
+              <Route path="/featured" element={<ComingSoon />} />
+              <Route path="/latest" element={<ComingSoon />} />
+              <Route path="/faq" element={<ComingSoon />} />
             </Routes>
           </Layout>
         </AuthProvider>

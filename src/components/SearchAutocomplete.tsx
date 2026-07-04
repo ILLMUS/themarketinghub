@@ -77,7 +77,26 @@ export const SearchAutocomplete = ({ className }: SearchAutocompleteProps) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search listings..."
-          className="w-full rounded-full bg-background/10 backdrop-blur-sm border border-muted-foreground/30 py-2.5 pl-10 pr-24 text-sm text-primary-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent"
+          className="
+w-full
+rounded-full
+bg-background
+border
+border-border
+py-2.5
+pl-10
+pr-24
+text-sm
+text-foreground
+placeholder:text-muted-foreground
+shadow-sm
+transition-all
+duration-200
+focus:outline-none
+focus:ring-2
+focus:ring-primary/20
+focus:border-primary
+"
         />
         <Button
           type="submit"
