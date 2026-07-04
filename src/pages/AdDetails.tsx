@@ -132,7 +132,7 @@ const jsonLd = {
         <div className="space-y-3">
           <div className="aspect-square rounded-lg bg-muted overflow-hidden">
             {ad.images && ad.images.length > 0 ? (
-              <img src={ad.images[selectedImage]} alt={ad.title} className="w-full h-full object-cover" />
+              <img src={ad.images[selectedImage]} alt={ad.title} className="w-full  h-auto max-h-[650px] object-contain mx-auto" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">No Image</div>
             )}
