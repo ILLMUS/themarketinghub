@@ -174,9 +174,9 @@ const { data: activeListingsCount = 0 } = useQuery({
                                 <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
                                 <div className="aspect-[4/3] bg-muted overflow-hidden">
                                   {ad.images?.[0] ? (
-                                    <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-cover" />
+                                    <img src={ad.images[0]} alt={ad.title} className="w-full h-auto max-h-[650px] object-contain mx-auto" />
                                   ) : (
-                                    <img src={heroCollage} alt="Marketplace" className="w-full h-full object-cover" />
+                                    <img src={heroCollage} alt="Marketplace" className="w-full h-auto max-h-[650px] object-contain mx-auto" />
                                   )}
                                 </div>
                                 <div className="p-2 bg-card text-foreground">
@@ -223,9 +223,9 @@ const { data: activeListingsCount = 0 } = useQuery({
                                   <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
                                   <div className="aspect-[4/3] bg-muted overflow-hidden">
                                     {ad.images?.[0] ? (
-                                      <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                      <img src={ad.images[0]} alt={ad.title} className="w-full h-auto max-h-[650px] object-contain mx-auto group-hover:scale-105 transition-transform duration-500" />
                                     ) : (
-                                      <img src={heroCollage} alt="Marketplace" className="w-full h-full object-cover" />
+                                      <img src={heroCollage} alt="Marketplace" className="w-full h-auto max-h-[650px] object-contain mx-auto" />
                                     )}
                                   </div>
                                   <div className="p-2 bg-card text-foreground">
@@ -262,7 +262,7 @@ const { data: activeListingsCount = 0 } = useQuery({
                             <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
                             <div className="aspect-[4/3] bg-muted overflow-hidden">
                               {ad.images?.[0] ? (
-                                <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                <img src={ad.images[0]} alt={ad.title} className="w-full h-full max-h-[650px] object-contain mx-auto group-hover:scale-105 transition-transform duration-500" />
                               ) : (
                                 <img src={heroCollage} alt="Marketplace" className="w-full h-full object-cover" />
                               )}
