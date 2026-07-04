@@ -7,7 +7,22 @@ import { Seo } from "@/hooks/useSeo";
 import { adOg } from "@/lib/ogImage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, MessageCircle, MapPin, ArrowLeft, Calendar, Heart } from "lucide-react";
+import {
+  TransformWrapper,
+  TransformComponent,
+} from "react-zoom-pan-pinch";
+import {  Phone,
+  MessageCircle,
+  MapPin,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Heart,
+  X } from "lucide-react";
+  import { useEffect } from "react";
+
+  
+  import { motion, AnimatePresence } from "framer-motion";
 import { ShareButtons } from "@/components/ShareButtons";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -20,7 +35,55 @@ const AdDetailsPage = () => {
   const { user } = useAuth();
   const { isSaved, toggleSave } = useSavedAds();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [direction, setDirection] = useState(0);
+const [previewOpen, setPreviewOpen] = useState(false);
+const nextImage = () => {
+  if (!ad?.images) return;
 
+  setDirection(1);
+
+  setSelectedImage((prev) =>
+    prev === ad.images.length - 1 ? 0 : prev + 1
+  );
+};
+
+
+useEffect(() => {
+  if (!previewOpen) return;
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case "Escape":
+        setPreviewOpen(false);
+        break;
+
+      case "ArrowLeft":
+        previousImage();
+        break;
+
+      case "ArrowRight":
+        nextImage();
+        break;
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, [previewOpen]);
+
+
+const previousImage = () => {
+  if (!ad?.images) return;
+
+  setDirection(-1);
+
+  setSelectedImage((prev) =>
+    prev === 0 ? ad.images.length - 1 : prev - 1
+  );
+};
   const { data: ad, isLoading } = useQuery({
     queryKey: ["ad", id],
     queryFn: async () => {
@@ -132,7 +195,21 @@ const jsonLd = {
         <div className="space-y-3">
           <div className="aspect-square rounded-lg bg-muted overflow-hidden">
             {ad.images && ad.images.length > 0 ? (
-              <img src={ad.images[selectedImage]} alt={ad.title} className="w-full  h-auto max-h-[650px] object-contain mx-auto" />
+              <img
+  src={ad.images[selectedImage]}
+  alt={ad.title}
+  onClick={() => setPreviewOpen(true)}
+  className="
+    w-full
+    h-auto
+    max-h-[650px]
+    object-contain
+    mx-auto
+    cursor-zoom-in
+    transition-transform
+    hover:scale-[1.01]
+  "
+/>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">No Image</div>
             )}
@@ -258,6 +335,159 @@ const jsonLd = {
           </div>
         </div>
       )}
+<AnimatePresence >
+{previewOpen && ad.images && (
+  <motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  exit={{ opacity: 0 }}
+  transition={{ duration: 0.25 }}
+    className="
+      fixed
+      inset-0
+      z-50
+      bg-black/95
+      flex
+      items-center
+      justify-center
+    "
+    onClick={() => setPreviewOpen(false)}
+  >
+    {/* Close */}
+
+    <button
+      onClick={() => setPreviewOpen(false)}
+      className="
+        absolute
+        top-6
+        right-6
+        text-white
+        hover:text-primary
+        transition
+        z-50
+      "
+    >
+      <X size={34} />
+    </button>
+
+    {/* Previous */}
+
+    {ad.images.length > 1 && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          previousImage();
+        }}
+        className="
+          absolute
+          left-6
+          text-white
+          bg-black/40
+          rounded-full
+          p-3
+          hover:bg-primary
+          transition
+          z-50
+        "
+      >
+        <ArrowLeft size={32} />
+      </button>
+    )}
+
+    {/* Image */}
+
+   <AnimatePresence mode="wait" custom={direction}>
+
+  <motion.img
+     drag="x"
+
+    dragConstraints={{
+        left:0,
+        right:0
+    }}
+
+    dragElastic={0.15}
+
+    onDragEnd={(event, info)=>{
+
+        if(info.offset.x < -120){
+
+            nextImage();
+
+        }
+
+        if(info.offset.x > 120){
+
+            previousImage();
+
+        }
+
+    }}
+    key={selectedImage}
+    custom={direction}
+
+    initial={(direction: number) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+      scale: 0.96,
+    })}
+
+    animate={{
+      x: 0,
+      opacity: 1,
+      scale: 1,
+    }}
+
+    exit={(direction: number) => ({
+      x: direction > 0 ? -300 : 300,
+      opacity: 0,
+      scale: 0.96,
+    })}
+
+    transition={{
+      duration: 0.35,
+      ease: "easeInOut",
+    }}
+
+    src={ad.images[selectedImage]}
+    alt={ad.title}
+    onClick={(e) => e.stopPropagation()}
+    className="
+      max-w-[95vw]
+      max-h-[90vh]
+      object-contain
+      rounded-lg
+      select-none
+    "
+  />
+
+</AnimatePresence>
+
+    {/* Next */}
+
+    {ad.images.length > 1 && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          nextImage();
+        }}
+        className="
+          absolute
+          right-6
+          text-white
+          bg-black/40
+          rounded-full
+          p-3
+          hover:bg-primary
+          transition
+          z-50
+        "
+      >
+        <ArrowRight size={32} />
+      </button>
+    )}
+  </motion.div>
+)}</AnimatePresence>
     </div>
   );
 };

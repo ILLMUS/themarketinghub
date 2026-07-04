@@ -128,14 +128,14 @@ const { data: activeListingsCount = 0 } = useQuery({
 
       {/* Hero */}
       <section className="gradient-hero text-primary-foreground overflow-hidden relative isolate">
-
+{/* Quick-Access Category Chips */}
+      <PopularChips categories={categories} chipIconMap={chipIconMap} />
       {/* Search */}
      <SearchAutocomplete
     className="max-w-md mx-auto pt-1 pb-1"/>
 
 
-      {/* Quick-Access Category Chips */}
-      <PopularChips categories={categories} chipIconMap={chipIconMap} />
+      
 
 
         {/* Responsive background image */}
