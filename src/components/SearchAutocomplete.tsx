@@ -13,6 +13,14 @@ interface SearchAutocompleteProps {
 export const SearchAutocomplete = ({ className }: SearchAutocompleteProps) => {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const placeholders = [
+  "Search...",
+  "Jobs...",
+  "Cars & Vehicles...",
+  "Property...",
+];
+
+const [placeholder, setPlaceholder] = useState(placeholders[0]);
   const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +52,45 @@ export const SearchAutocomplete = ({ className }: SearchAutocompleteProps) => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+useEffect(() => {
+  let wordIndex = 0;
+  let letterIndex = 0;
+  let deleting = false;
 
+  let timeout: ReturnType<typeof setTimeout>;
+
+  const animate = () => {
+    // Stop animation while user is typing
+    if (query.length > 0) return;
+
+    const currentWord = placeholders[wordIndex];
+
+    if (!deleting) {
+      setPlaceholder(currentWord.substring(0, letterIndex + 1));
+      letterIndex++;
+
+      if (letterIndex === currentWord.length) {
+        deleting = true;
+        timeout = setTimeout(animate, 1200);
+        return;
+      }
+    } else {
+      setPlaceholder(currentWord.substring(0, letterIndex - 1));
+      letterIndex--;
+
+      if (letterIndex === 0) {
+        deleting = false;
+        wordIndex = (wordIndex + 1) % placeholders.length;
+      }
+    }
+
+    timeout = setTimeout(animate, deleting ? 40 : 80);
+  };
+
+  timeout = setTimeout(animate, 600);
+
+  return () => clearTimeout(timeout);
+}, [query]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
@@ -56,7 +102,7 @@ export const SearchAutocomplete = ({ className }: SearchAutocompleteProps) => {
   const goToAd = (id: string) => {
     setOpen(false);
     navigate(`/ad/${id}`);
-  };
+  }; 
 
   const highlight = (text: string) => {
     if (!query.trim()) return text;
@@ -76,7 +122,7 @@ export const SearchAutocomplete = ({ className }: SearchAutocompleteProps) => {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search listings..."
+          placeholder={query ? "" : placeholder}
           className="
 w-full
 rounded-full

@@ -3,11 +3,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart, Users, Building } from "lucide-react";
+  import { SearchAutocomplete } from "@/components/SearchAutocomplete";
 
 import {  ArrowRight, ShoppingBag, FileText, CheckCircle, DollarSign,
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Tag,
   Utensils, Scissors, TreePine, Landmark, Truck, Play, Pause } from "lucide-react";
-  import { SearchAutocomplete } from "@/components/SearchAutocomplete";
+ 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +114,8 @@ const iconMap = {
         </Link>
 
         {/* Desktop Nav */}
-         {/* Search */}
+
+ {/* Search */}
     <div
   className="
     mx-auto
@@ -121,11 +123,14 @@ const iconMap = {
     max-w-md
     rounded-xl
     border
-    border-border
-    bg-secondary/60
+    border-gray-300
+    dark:border-gray-700
+    bg-white
+    dark:bg-background
     shadow-sm
     transition-all
     duration-300
+    hover:border-gray-400
     hover:shadow-md
     focus-within:border-primary
     focus-within:ring-2
@@ -136,6 +141,9 @@ const iconMap = {
     className="w-full"
   />
 </div>
+
+
+
 
         <div className="hidden md:flex items-center gap-3">
           {user ? (

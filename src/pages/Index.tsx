@@ -17,6 +17,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState } from "react";
 import { Seo } from "@/hooks/useSeo";
 import SEO from "@/components/seo/SEO";
+import { marketplaceCategories } from "@/data/marketplaceCategories";
 
 const chipIconMap: Record<string, React.ElementType> = {
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase,
@@ -128,22 +129,18 @@ const { data: activeListingsCount = 0 } = useQuery({
 
 
       {/* Hero */}
-      <section className="gradient-hero text-primary-foreground overflow-hidden relative isolate">
+      <section className="    bg-secondary/60
+-hero text-primary-foreground overflow-hidden relative isolate">
+
+ 
+
 {/* Quick-Access Category Chips */}
-      <PopularChips categories={categories} chipIconMap={chipIconMap} />
-    
-
-
-      
-
-
-   
+<PopularChips
+    categories={marketplaceCategories}
+/>  
         <div className="container py-10 md:py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            
-            
-
-
+           
             {/* Right - Image */}
             <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
               {heroSpotlights.length > 0 ? (

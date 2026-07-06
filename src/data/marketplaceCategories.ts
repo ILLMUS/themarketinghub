@@ -11,7 +11,9 @@ export const marketplaceCategories = [
 {
   id: "vehicles",
   name: "Car & Vehicles",
-  icon: Car,
+
+  image: "/categories/vehicles.jpg",
+
 
   subcategories: [
     {
@@ -68,8 +70,8 @@ export const marketplaceCategories = [
   {
     id: "property",
     name: "Property",
-    icon: Home,
 
+    image: "/categories/property.jpg",
    subcategories: [
   
     {
@@ -107,7 +109,8 @@ export const marketplaceCategories = [
   {
     id: "jobs",
     name: "Jobs",
-    icon: Briefcase,
+
+    image: "/categories/jobs.jpg",
 
     subcategories: [
       {
@@ -140,7 +143,8 @@ export const marketplaceCategories = [
   {
     id: "services",
     name: "Services",
-    icon: Wrench,
+   
+    image: "/categories/services.jpg",
 
     subcategories: [
   {
@@ -229,7 +233,8 @@ export const marketplaceCategories = [
   {
     id: "sale",
     name: "For Sale",
-    icon: ShoppingBag,
+
+    image: "/categories/sale.jpg",
 
     subcategories: [
   {
@@ -323,7 +328,8 @@ export const marketplaceCategories = [
   {
     id: "pets",
     name: "Pets & Livestock",
-    icon: Dog,
+   
+    image: "/categories/pets.jpg",
 
     subcategories: [
   {

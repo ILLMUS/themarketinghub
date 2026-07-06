@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Tag } from "lucide-react";
+import { marketplaceCategories } from "@/data/marketplaceCategories";
 
 interface Category {
   id: string;
   name: string;
   icon: string | null;
-  description: string | null;
+  description: string |null;
 }
 
 interface PopularChipsProps {
@@ -13,32 +15,272 @@ interface PopularChipsProps {
   chipIconMap: Record<string, React.ElementType>;
 }
 
-export function PopularChips({ categories, chipIconMap }: PopularChipsProps) {
+export function PopularChips({
+  categories,
+  chipIconMap,
+}: PopularChipsProps) {
+
   const chips = categories?.slice(0, 9) ?? [];
-
+const [activeCategory, setActiveCategory] = useState<string | null>(null);
+const hoveredCategory = marketplaceCategories.find(
+  (category) => category.id === activeCategory
+);
   return (
-    <section className="border-b bg-card">
-      <div className="container py-5">
-        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
-          <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-            Popular:
-          </span>
-          {chips.map((cat) => {
-            const Icon = cat.icon ? chipIconMap[cat.icon] || Tag : null;
 
-            return (
-              <Link
-                key={cat.id}
-                to={`/marketplace?category=${cat.id}`}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-medium transition-colors bg-secondary/50 text-secondary-foreground hover:bg-primary hover:text-primary-foreground"
-              >
-                {Icon && <Icon className="h-3.5 w-3.5" />}
-                {cat.name}
-              </Link>
-            );
-          })}
-        </div>
+    <>
+{/* ------------------------------------------------ */}
+{/* Scrollable Categories */}
+{/* ------------------------------------------------ */}
+
+<section className="border-b bg-card">
+
+  <div className="container py-5">
+
+    <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+
+      {chips.map((cat) => (
+
+        <Link
+            key={cat.id}
+            to={`/marketplace?category=${cat.id}`}
+            onMouseEnter={() => setActiveCategory(cat.id)}
+            onMouseLeave={() => setActiveCategory(null)}
+            className="
+            flex-shrink-0
+            whitespace-nowrap
+            rounded-full
+            border
+            border-gray-300
+            bg-white
+            px-5
+            py-2
+            text-sm
+            font-medium
+            text-gray-800
+            transition-all
+            duration-300
+            hover:bg-primary
+            hover:border-primary
+            hover:text-white
+          "
+        >
+          {cat.name}
+        </Link>
+
+      ))}
+
+    </div>
+
+  </div>
+
+</section>
+{hoveredCategory && (
+
+  <section className="border-b bg-white">
+
+    <div className="container py-4">
+
+      <div className="flex flex-wrap gap-3">
+
+        {hoveredCategory.subcategories.map((sub) => (
+
+          <Link
+            key={sub.id}
+            to={`/marketplace?category=${hoveredCategory.id}&subcategory=${sub.id}`}
+            className="
+              rounded-full
+              border
+              border-gray-200
+              bg-gray-50
+              px-4
+              py-2
+              text-sm
+              text-gray-700
+              transition-all
+              duration-200
+              hover:bg-primary
+              hover:text-white
+              hover:border-primary
+            "
+          >
+            {sub.name}
+          </Link>
+
+        ))}
+
       </div>
-    </section>
+
+    </div>
+
+  </section>
+
+)}
+      {/* ------------------------------------------------ */}
+      {/* Browse Categories */}
+      {/* ------------------------------------------------ */}
+
+      <section className="py-16 bg-background">
+
+        <div className="container">
+
+          <div className="mb-10">
+
+            <h2 className="text-3xl font-bold">
+              Browse Categories
+            </h2>
+
+            <p className="text-muted-foreground mt-2">
+              Discover thousands of products and services across Eswatini.
+            </p>
+
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-7">
+
+            {marketplaceCategories.map((category) => {
+
+              const Icon = category.icon;
+
+              return (
+
+                <Link
+                  key={category.id}
+                  to={`/marketplace?category=${category.id}`}
+                  className="
+                    group
+                    rounded-2xl
+                    overflow-hidden
+                    border
+                    bg-card
+                    shadow-sm
+                    hover:shadow-2xl
+                    hover:-translate-y-2
+                    transition-all
+                    duration-300
+                  "
+                >
+
+                  {/* IMAGE */}
+
+                  <div className="relative h-44 overflow-hidden">
+
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="
+                        h-full
+                        w-full
+                        object-cover
+                        transition-transform
+                        duration-700
+                        group-hover:scale-110
+                      "
+                    />
+
+                    {/* Gradient */}
+
+                    <div className="
+                      absolute
+                      inset-0
+                      bg-gradient-to-t
+                      from-black/80
+                      via-black/20
+                      to-transparent
+                    " />
+
+                    {/* Icon */}
+
+                    {Icon && (
+
+                      <div className="
+                        absolute
+                        top-4
+                        left-4
+                        rounded-full
+                        bg-white/20
+                        backdrop-blur-md
+                        p-3
+                      ">
+
+                        <Icon
+                          className="h-6 w-6 text-white"
+                        />
+
+                      </div>
+
+                    )}
+
+                    {/* Listing Count Placeholder */}
+
+                    <div className="
+                      absolute
+                      bottom-4
+                      right-4
+                      rounded-full
+                      bg-primary
+                      text-white
+                      text-xs
+                      font-semibold
+                      px-3
+                      py-1
+                    ">
+
+                      Coming Soon
+
+                    </div>
+
+                  </div>
+
+                  {/* CONTENT */}
+
+                  <div className="p-4">
+
+                    <h3 className="font-bold text-lg mb-3">
+
+                      {category.name}
+
+                    </h3>
+
+                    <div className="space-y-1">
+
+                      {category.subcategories
+                        .slice(0, 4)
+                        .map((sub) => (
+
+                          <p
+                            key={sub.id}
+                            className="
+                              text-sm
+                              text-muted-foreground
+                              group-hover:text-foreground
+                              transition-colors
+                            "
+                          >
+
+                            • {sub.name}
+
+                          </p>
+
+                      ))}
+
+                    </div>
+
+                  </div>
+
+                </Link>
+
+              );
+
+            })}
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </>
+
   );
+
 }
