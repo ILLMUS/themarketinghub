@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Tag } from "lucide-react";
 import { marketplaceCategories } from "@/data/marketplaceCategories";
 import { Grid2X2 } from "lucide-react";
+import { Store } from "lucide-react";
 interface Category {
   id: string;
   name: string;
@@ -40,26 +41,29 @@ const hoveredCategory = marketplaceCategories.find(
 
   {/* View All Categories Button */}
 
-  <Link
-    to="/categories"
-    className="
-      flex-shrink-0
-      whitespace-nowrap
-      rounded-full
-      bg-primary
-      text-white
-      px-5
-      py-2
-      text-sm
-      font-semibold
-      transition-all
-      duration-300
-      hover:bg-primary/90
-      hover:shadow-md
-    "
-  >
-    View All Categories
-  </Link>
+<Link
+  to="/categories"
+  aria-label="Browse Marketplace Categories"
+  title="Browse Marketplace Categories"
+  className="
+    flex-shrink-0
+    flex
+    items-center
+    justify-center
+    w-11
+    h-11
+    rounded-full
+    bg-primary/30
+    text-blue-700
+    transition-all
+    duration-300
+    hover:bg-primary/90
+    hover:scale-105
+    hover:shadow-lg
+  "
+>
+  <Store className="w-5 h-5" />
+</Link>
 
   {/* Scrollable Categories */}
 
