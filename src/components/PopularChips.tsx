@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Tag } from "lucide-react";
 import { marketplaceCategories } from "@/data/marketplaceCategories";
-
+import { Grid2X2 } from "lucide-react";
 interface Category {
   id: string;
   name: string;
@@ -36,40 +36,67 @@ const hoveredCategory = marketplaceCategories.find(
 
   <div className="container py-5" onMouseLeave={() => setActiveCategory(null)}>
 
-    <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+    <div className="flex items-center gap-3">
 
-      {chips.map((cat) => (
+  {/* View All Categories Button */}
 
-        <Link
-            key={cat.id}
-            to={`/marketplace?category=${cat.id}`}
-            onMouseEnter={() => setActiveCategory(cat.id)}
+  <Link
+    to="/categories"
+    className="
+      flex-shrink-0
+      whitespace-nowrap
+      rounded-full
+      bg-primary
+      text-white
+      px-5
+      py-2
+      text-sm
+      font-semibold
+      transition-all
+      duration-300
+      hover:bg-primary/90
+      hover:shadow-md
+    "
+  >
+    View All Categories
+  </Link>
 
-            className="
-            flex-shrink-0
-            whitespace-nowrap
-            rounded-full
-            border
-            border-gray-300
-            bg-white
-            px-5
-            py-2
-            text-sm
-            font-medium
-            text-gray-800
-            transition-all
-            duration-300
-            hover:bg-primary
-            hover:border-primary
-            hover:text-white
-          "
-        >
-          {cat.name}
-        </Link>
+  {/* Scrollable Categories */}
 
-      ))}
+  <div className="flex gap-3 overflow-x-auto scrollbar-hide flex-1">
 
-    </div>
+    {chips.map((cat) => (
+
+      <Link
+        key={cat.id}
+        to={`/marketplace?category=${cat.id}`}
+        className="
+          flex-shrink-0
+          whitespace-nowrap
+          rounded-full
+          border
+          border-gray-300
+          bg-white
+          px-5
+          py-2
+          text-sm
+          font-medium
+          text-gray-800
+          transition-all
+          duration-300
+          hover:bg-primary
+          hover:border-primary
+          hover:text-white
+        "
+      >
+        {cat.name}
+      </Link>
+
+    ))}
+
+  </div>
+
+</div>
 {hoveredCategory && (
 
   <div

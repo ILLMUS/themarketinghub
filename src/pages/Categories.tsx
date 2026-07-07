@@ -1,19 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { CategoryCard } from "@/components/CategoryCard";
+import { Link } from "react-router-dom";
+import { marketplaceCategories } from "@/data/marketplaceCategories";
 import { Seo } from "@/hooks/useSeo";
-import SEO from "@/components/seo/SEO";
 
 const CategoriesPage = () => {
-  const { data: categories, isLoading } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").order("name");
-      if (error) throw error;
-      return data;
-    },
-  });
-
   return (
     <div className="container py-8">
       <Seo
@@ -25,33 +14,105 @@ const CategoriesPage = () => {
           "@type": "CollectionPage",
           name: "Marketplace Categories",
           url: `${window.location.origin}/categories`,
-          hasPart: (categories || []).map((c) => ({
+          hasPart: marketplaceCategories.map((category) => ({
             "@type": "CollectionPage",
-            name: c.name,
-            url: `${window.location.origin}/marketplace?category=${c.id}`,
-            description: c.description || `Browse ${c.name} listings in Eswatini.`,
+            name: category.name,
+            url: `${window.location.origin}/marketplace?category=${category.id}`,
           })),
         }}
       />
-      <h1 className="text-3xl font-bold mb-2">Categories</h1>
-      <p className="text-muted-foreground mb-8">Browse listings by category</p>
 
-      {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="rounded-xl border bg-card p-6 animate-pulse">
-              <div className="w-14 h-14 bg-muted rounded-xl mx-auto mb-3" />
-              <div className="h-4 bg-muted rounded w-2/3 mx-auto" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {categories?.map((cat) => (
-            <CategoryCard key={cat.id} id={cat.id} name={cat.name} icon={cat.icon} description={cat.description} />
-          ))}
-        </div>
-      )}
+      <h1 className="text-3xl font-bold mb-2">Categories</h1>
+
+      <p className="text-muted-foreground mb-8">
+        Browse all categories on The Market Hub.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        {marketplaceCategories.map((category) => {
+
+          const Icon = category.icon;
+
+          return (
+
+          <Link
+  key={category.id}
+  to={`/marketplace?category=${category.id}`}
+  className="
+    rounded-2xl
+    border
+    bg-card
+    shadow-sm
+    hover:shadow-lg
+    transition-all
+    duration-300
+    p-5
+  "
+>
+
+  {/* Header */}
+
+  <div className="flex items-center gap-4">
+
+    <img
+      src={category.image}
+      alt={category.name}
+      className="
+        h-20
+        w-20
+        rounded-xl
+        object-cover
+        flex-shrink-0
+      "
+    />
+
+    <div>
+
+      <h3 className="text-xl font-bold text-foreground">
+
+        {category.name}
+
+      </h3>
+
+    </div>
+
+  </div>
+
+  {/* Divider */}
+
+  <div className="my-5 border-t" />
+
+  {/* Subcategories */}
+
+  <div className="space-y-2">
+
+    {category.subcategories.map((sub) => (
+
+      <p
+        key={sub.id}
+        className="
+          text-sm
+          text-muted-foreground
+        "
+      >
+
+        • {sub.name}
+
+      </p>
+
+    ))}
+
+  </div>
+
+</Link>
+
+          );
+
+        })}
+
+      </div>
+
     </div>
   );
 };
