@@ -32,9 +32,9 @@ const hoveredCategory = marketplaceCategories.find(
 {/* Scrollable Categories */}
 {/* ------------------------------------------------ */}
 
-<section className="border-b bg-card">
+<section className="relative border-b bg-card">
 
-  <div className="container py-5">
+  <div className="container py-5" onMouseLeave={() => setActiveCategory(null)}>
 
     <div className="flex gap-3 overflow-x-auto scrollbar-hide">
 
@@ -44,7 +44,7 @@ const hoveredCategory = marketplaceCategories.find(
             key={cat.id}
             to={`/marketplace?category=${cat.id}`}
             onMouseEnter={() => setActiveCategory(cat.id)}
-            onMouseLeave={() => setActiveCategory(null)}
+
             className="
             flex-shrink-0
             whitespace-nowrap
@@ -70,13 +70,20 @@ const hoveredCategory = marketplaceCategories.find(
       ))}
 
     </div>
-
-  </div>
-
-</section>
 {hoveredCategory && (
 
-  <section className="border-b bg-white">
+  <div
+  className="
+    absolute
+    top-full
+    left-0
+    w-full
+    bg-white
+    border-b
+    shadow-xl
+    z-[999]
+  "
+>
 
     <div className="container py-4">
 
@@ -112,14 +119,20 @@ const hoveredCategory = marketplaceCategories.find(
 
     </div>
 
-  </section>
+  </div>
 
 )}
+  </div>
+
+</section>
+
+
+
       {/* ------------------------------------------------ */}
       {/* Browse Categories */}
       {/* ------------------------------------------------ */}
 
-      <section className="py-16 bg-background">
+      <section className="py-0 bg-background">
 
         <div className="container">
 
@@ -135,8 +148,7 @@ const hoveredCategory = marketplaceCategories.find(
 
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-7">
-
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-4">
             {marketplaceCategories.map((category) => {
 
               const Icon = category.icon;
@@ -162,19 +174,26 @@ const hoveredCategory = marketplaceCategories.find(
 
                   {/* IMAGE */}
 
-                  <div className="relative h-44 overflow-hidden">
+                  <div
+                    className="
+                      relative
+                      aspect-square
+                      overflow-hidden
+                    "
+                  >
 
                     <img
                       src={category.image}
                       alt={category.name}
                       className="
-                        h-full
-                        w-full
-                        object-cover
-                        transition-transform
-                        duration-700
-                        group-hover:scale-110
-                      "
+                          w-full
+                          h-full
+                          object-cover
+                          object-center
+                          transition-transform
+                          duration-500
+                          group-hover:scale-105
+                          "
                     />
 
                     {/* Gradient */}
@@ -212,60 +231,61 @@ const hoveredCategory = marketplaceCategories.find(
 
                     {/* Listing Count Placeholder */}
 
-                    <div className="
-                      absolute
-                      bottom-4
-                      right-4
-                      rounded-full
-                      bg-primary
-                      text-white
-                      text-xs
-                      font-semibold
-                      px-3
-                      py-1
-                    ">
+<div
+  className="
+    absolute
+    bottom-2 md:bottom-3 lg:bottom-4
+    right-2 md:right-3 lg:right-4
 
-                      Coming Soon
+    rounded-full
+    bg-primary
 
-                    </div>
+    px-2 py-1
+    md:px-3 md:py-1
+
+    text-[9px]
+    sm:text-[10px]
+    md:text-xs
+
+    font-semibold
+    text-white
+
+    shadow-lg
+    whitespace-nowrap
+  "
+>
+  Coming Soon
+</div>
 
                   </div>
 
                   {/* CONTENT */}
 
-                  <div className="p-4">
+                  
 
-                    <h3 className="font-bold text-lg mb-3">
 
-                      {category.name}
+                  <div
+  className="
+    absolute
+    bottom-4
+    left-4
+    z-20
+  "
+>
 
-                    </h3>
+  <h3
+    className="
+      text-base
+      font-semibold
+      text-black
+      drop-shadow-lg
+      mb-16
+    "
+  >
+    {category.name}
+  </h3>
 
-                    <div className="space-y-1">
-
-                      {category.subcategories
-                        .slice(0, 4)
-                        .map((sub) => (
-
-                          <p
-                            key={sub.id}
-                            className="
-                              text-sm
-                              text-muted-foreground
-                              group-hover:text-foreground
-                              transition-colors
-                            "
-                          >
-
-                            • {sub.name}
-
-                          </p>
-
-                      ))}
-
-                    </div>
-
-                  </div>
+</div>
 
                 </Link>
 
