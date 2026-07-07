@@ -143,7 +143,6 @@ export const marketplaceCategories = [
   {
     id: "services",
     name: "Services",
-   
     image: "/categories/services.jpg",
 
     subcategories: [

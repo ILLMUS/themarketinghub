@@ -138,7 +138,7 @@ const hoveredCategory = marketplaceCategories.find(
 
           <div className="mb-10">
 
-            <h2 className="text-3xl font-bold">
+            <h2 className="text-3xl text-black font-bold">
               Browse Categories
             </h2>
 
@@ -231,27 +231,34 @@ const hoveredCategory = marketplaceCategories.find(
 
                     {/* Listing Count Placeholder */}
 
-<div
+                    <div
   className="
     absolute
-    bottom-2 md:bottom-3 lg:bottom-4
-    right-2 md:right-3 lg:right-4
+    bottom-1
+    right-1
+    sm:bottom-2
+    sm:right-2
 
     rounded-full
     bg-primary
-
-    px-2 py-1
-    md:px-3 md:py-1
-
-    text-[9px]
-    sm:text-[10px]
-    md:text-xs
-
-    font-semibold
     text-white
 
-    shadow-lg
+    text-[7px]
+    sm:text-[8px]
+    md:text-[9px]
+    lg:text-[8px]
+    xl:text-[7px]
+
+    font-semibold
+    leading-none
     whitespace-nowrap
+
+    px-1
+    sm:px-1.5
+    md:px-2
+
+    py-0.5
+    shadow-md
   "
 >
   Coming Soon
@@ -265,25 +272,15 @@ const hoveredCategory = marketplaceCategories.find(
 
 
                   <div
-  className="
-    absolute
-    bottom-4
-    left-4
-    z-20
-  "
->
+                  className="
+                    absolute
+                    bottom-4
+                    left-4
+                    z-20
+                  "
+                >
 
-  <h3
-    className="
-      text-base
-      font-semibold
-      text-black
-      drop-shadow-lg
-      mb-16
-    "
-  >
-    {category.name}
-  </h3>
+
 
 </div>
 
