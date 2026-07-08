@@ -40,7 +40,7 @@ export function Header() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<any>(null);
-  
+  const [showPostText, setShowPostText] = useState(false);
   const unreadCount = useUnreadMessages();
 
   const { data: latestAds } = useQuery({
@@ -99,7 +99,18 @@ const iconMap = {
     return data;
   },
 });
+useEffect(() => {
+  const interval = setInterval(() => {
+    setShowPostText(true);
 
+    setTimeout(() => {
+      setShowPostText(false);
+    }, 1800); // show for 1.8 seconds
+
+  }, 12000); // every 10 seconds
+
+  return () => clearInterval(interval);
+}, []);
   return (
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
 
@@ -130,7 +141,18 @@ const iconMap = {
 
           <button
             onClick={() => navigate("/saved")}
-            className="text-muted-foreground hover:text-primary transition-colors"
+            className="
+  flex
+  h-11
+  w-11
+  items-center
+  justify-center
+  rounded-full
+  text-muted-foreground
+  hover:bg-primary/10
+  hover:text-primary
+  transition-all
+"
           >
             <Heart className="h-6 w-6" />
           </button>
@@ -169,26 +191,55 @@ const iconMap = {
           </button>
           {/* Post Ad */}
 
-          <button
-            onClick={() => navigate("/post-ad")}
-            className="
-              relative
-              flex
-              h-11
-              w-11
-              items-center
-              justify-center
-              rounded-full
-              bg-primary
-              text-white
-              shadow-lg
-              transition-all
-              duration-300
-              hover:scale-110
-            "
-          >
-            <Plus className="h-5 w-5" />
-          </button>
+<div className="relative">
+
+  <button
+    onClick={() => navigate("/post-ad")}
+    className={`
+      flex
+      items-center
+      justify-center
+      overflow-hidden
+      rounded-full
+      bg-primary
+      text-white
+      shadow-xl
+      transition-all
+      duration-500
+      ease-in-out
+      h-12
+      ${showPostText ? "w-36 px-4" : "w-12"}
+    `}
+  >
+
+    <Plus
+      className={`
+        h-5
+        w-5
+        transition-all
+        duration-300
+        ${showPostText ? "mr-2" : ""}
+      `}
+    />
+
+    <span
+      className={`
+        whitespace-nowrap
+        text-sm
+        font-semibold
+        transition-all
+        duration-300
+        ${showPostText
+          ? "opacity-100 translate-x-0"
+          : "opacity-0 -translate-x-2 w-0 overflow-hidden"}
+      `}
+    >
+      Post Ad
+    </span>
+
+  </button>
+
+</div>
 
           {/* Profile */}
 
