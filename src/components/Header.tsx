@@ -102,6 +102,156 @@ const iconMap = {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+
+{/* Mobile Quick Actions */}
+
+<div className="md:hidden border-t bg-card">
+
+  <div className="container">
+
+<div
+  className="
+    flex
+    items-center
+    justify-evenly
+    py-1
+    px-0
+    lg:px-4
+  "
+>
+
+      {user ? (
+
+        <>
+
+
+
+          {/* Saved */}
+
+          <button
+            onClick={() => navigate("/saved")}
+            className="text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Heart className="h-6 w-6" />
+          </button>
+
+          {/* Messages */}
+
+          <button
+            onClick={() => navigate("/messages")}
+            className="relative text-muted-foreground hover:text-primary transition-colors"
+          >
+            <MessageCircle className="h-6 w-6" />
+
+            {unreadCount > 0 && (
+
+              <span
+                className="
+                  absolute
+                  -top-1
+                  -right-1
+                  h-5
+                  min-w-5
+                  rounded-full
+                  bg-destructive
+                  text-white
+                  text-[10px]
+                  flex
+                  items-center
+                  justify-center
+                "
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+
+            )}
+
+          </button>
+          {/* Post Ad */}
+
+          <button
+            onClick={() => navigate("/post-ad")}
+            className="
+              relative
+              flex
+              h-11
+              w-11
+              items-center
+              justify-center
+              rounded-full
+              bg-primary
+              text-white
+              shadow-lg
+              transition-all
+              duration-300
+              hover:scale-110
+            "
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+
+          {/* Profile */}
+
+          <button
+            onClick={() => navigate("/profile")}
+            className="text-muted-foreground hover:text-primary transition-colors"
+          >
+            <User className="h-6 w-6" />
+          </button>
+          
+
+          {/* Logout */}
+
+          <button
+            onClick={signOut}
+            className="text-muted-foreground hover:text-red-500 transition-colors"
+          >
+            <LogOut className="h-6 w-6" />
+          </button>
+
+        </>
+
+      ) : (
+
+        <>
+
+          <button
+            onClick={() => navigate("/login")}
+            className="
+              rounded-full
+              border
+              px-4
+              py-2
+              text-sm
+            "
+          >
+            Login
+          </button>
+
+          <button
+            onClick={() => navigate("/register")}
+            className="
+              rounded-full
+              bg-primary
+              px-4
+              py-2
+              text-sm
+              text-white
+            "
+          >
+            Register
+          </button>
+
+        </>
+
+      )}
+
+    </div>
+
+  </div>
+
+</div>
+
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div >
@@ -208,26 +358,7 @@ const iconMap = {
                     <LayoutDashboard className="h-4 w-4 mr-1" /> Admin
                   </Button>
                 )}
-                <Button className="w-full gradient-primary border-0" onClick={() => { navigate("/post-ad"); setMenuOpen(false); }}>
-                  <Plus className="h-4 w-4 mr-1" /> Post Ad
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => { navigate("/saved"); setMenuOpen(false); }}>
-                  <Heart className="h-4 w-4 mr-1" /> Saved Ads
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => { navigate("/messages"); setMenuOpen(false); }}>
-                  <MessageCircle className="h-4 w-4 mr-1" /> Messages
-                  {unreadCount > 0 && (
-                    <span className="ml-2 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => { navigate("/profile"); setMenuOpen(false); }}>
-                  <User className="h-4 w-4 mr-1" /> Profile
-                </Button>
-                <Button variant="ghost" className="w-full" onClick={() => { signOut(); setMenuOpen(false); }}>
-                  <LogOut className="h-4 w-4 mr-1" /> Sign Out
-                </Button>
+
               </>
             ) : (
               <>

@@ -74,7 +74,8 @@ const hoveredCategory = marketplaceCategories.find(
       <Link
         key={cat.id}
         to={`/marketplace?category=${cat.id}`}
-        className="
+          onMouseEnter={() => setActiveCategory(cat.id)}
+          className="
           flex-shrink-0
           whitespace-nowrap
           rounded-full
