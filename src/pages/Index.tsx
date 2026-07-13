@@ -130,7 +130,7 @@ const { data: activeListingsCount = 0 } = useQuery({
 
       {/* Hero */}
       <section className="    bg-secondary/60
--hero text-primary-foreground overflow-hidden relative isolate">
+              -hero text-primary-foreground overflow-hidden relative isolate">
 
  
 

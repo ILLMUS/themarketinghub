@@ -168,17 +168,7 @@ const hoveredCategory = marketplaceCategories.find(
 
         <div className="container">
 
-          <div className="mb-10">
 
-            <h2 className="text-3xl text-black font-bold">
-              Browse Categories
-            </h2>
-
-            <p className="text-muted-foreground mt-2">
-              Discover thousands of products and services across Eswatini.
-            </p>
-
-          </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-4">
             {marketplaceCategories.map((category) => {
