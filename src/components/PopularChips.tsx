@@ -65,14 +65,14 @@ export function PopularChips({
           100% { transform: rotate(360deg); }
         }
         .animate-border-loop {
-          animation: spinSlow 15s linear infinite;
+          animation: spinSlow 1s linear infinite;
         }
 
         /* Blue and Yellow floating cloud animations */
         @keyframes cloudMoveLeft {
-          0% { transform: translate(-20%, -20%) scale(1); }
-          50% { transform: translate(30%, 20%) scale(1.1); }
-          100% { transform: translate(-20%, -20%) scale(1); }
+          0% { transform: translate(-20%, -20%) scale(3); }
+          50% { transform: translate(30%, 20%) scale(3.1); }
+          100% { transform: translate(-20%, -20%) scale(3); }
         }
         @keyframes cloudMoveRight {
           0% { transform: translate(20%, 20%) scale(1.1); }
@@ -88,11 +88,11 @@ export function PopularChips({
 
         /* 5-second fade in / out looping animation for scroll instruction text */
         @keyframes fadePulse {
-          0%, 100% { opacity: 0; }
-          10%, 90% { opacity: 0.85; }
+          0%, 100% { opacity: 0.85; }
+          10%, 90% { opacity: 0; }
         }
         .animate-fade-pulse {
-          animation: fadePulse 5s ease-in-out infinite;
+          animation: fadePulse 10s ease-in-out infinite;
         }
       `}</style>
 
