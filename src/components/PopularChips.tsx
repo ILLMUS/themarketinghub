@@ -29,7 +29,6 @@ export function PopularChips({
     (category) => category.id === activeCategory
   );
 
-  // Monitor horizontal scroll to show/hide indicator arrows
   const checkScroll = () => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
@@ -42,7 +41,6 @@ export function PopularChips({
     const el = scrollContainerRef.current;
     if (el) {
       el.addEventListener("scroll", checkScroll);
-      // Run once on mount to set initial states
       checkScroll();
     }
     return () => el?.removeEventListener("scroll", checkScroll);
@@ -60,22 +58,34 @@ export function PopularChips({
 
   return (
     <>
+      {/* Injecting CSS Keyframes dynamically for the 15s fading glow border loop */}
+      <style>{`
+        @keyframes spinSlow {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .animate-border-loop {
+          animation: spinSlow 15s linear infinite;
+        }
+      `}</style>
+
       {/* ------------------------------------------------ */}
       {/* 1. Scrollable Categories with Smooth Navigation */}
       {/* ------------------------------------------------ */}
-      <section className="relative border-b bg-card/50 backdrop-blur-md">
+      <section className="relative z-50 border-b bg-card/50 backdrop-blur-md">
         <div 
           className="container mx-auto px-4 py-4" 
           onMouseLeave={() => setActiveCategory(null)}
         >
           <div className="flex items-center gap-3 relative">
             
-            {/* "View All" Button as a Premium Icon Brand-Mark */}
+            {/* Animating Store Icon Wrapper */}
             <Link
               to="/categories"
               aria-label="Browse Marketplace Categories"
               title="Browse All Categories"
               className="
+                relative
                 flex-shrink-0
                 flex
                 items-center
@@ -83,17 +93,44 @@ export function PopularChips({
                 w-10
                 h-10
                 rounded-full
-                bg-primary/10
-                text-primary
+                bg-background
                 transition-all
                 duration-300
-                hover:bg-primary
-                hover:text-white
                 hover:scale-105
                 hover:shadow-md
+                overflow-hidden
+                p-[2px]
               "
             >
-              <Store className="w-5 h-5" />
+              {/* Spinning/Fading Border Track */}
+              <div className="absolute inset-0 z-0">
+                <div className="
+                  absolute 
+                  -inset-[50%] 
+                  bg-[conic-gradient(from_0deg,#3b82f6_0%,#eab308_50%,#3b82f6_100%)] 
+                  opacity-80 
+                  blur-[1px]
+                  animate-border-loop
+                " />
+              </div>
+              
+              {/* Inner Solid Card Body to mask the background and act as the true button background */}
+              <div className="
+                relative 
+                z-10 
+                flex 
+                items-center 
+                justify-center 
+                w-full 
+                h-full 
+                rounded-full 
+                bg-card 
+                text-primary 
+                hover:bg-primary/5
+                transition-colors
+              ">
+                <Store className="w-4.5 h-4.5" />
+              </div>
             </Link>
 
             {/* Left Edge Fade & Scroll Control */}
@@ -159,7 +196,7 @@ export function PopularChips({
           </div>
         </div>
 
-        {/* Dynamic Nested Subcategory Panel with Slide/Fade animation */}
+        {/* Dynamic Nested Subcategory Panel (Highest z-index overlay & 4-Column Directory Layout) */}
         <div 
           onMouseEnter={() => hoveredCategory && setActiveCategory(hoveredCategory.id)}
           onMouseLeave={() => setActiveCategory(null)}
@@ -171,8 +208,8 @@ export function PopularChips({
             bg-background/95
             backdrop-blur-md
             border-b
-            shadow-lg
-            z-40
+            shadow-xl
+            z-[100]
             transition-all
             duration-300
             ease-out
@@ -183,31 +220,35 @@ export function PopularChips({
             }
           `}
         >
-          <div className="container mx-auto px-4 py-3.5">
-            <div className="flex flex-wrap gap-2">
+          <div className="container mx-auto px-6 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {hoveredCategory?.subcategories.map((sub) => (
                 <Link
                   key={sub.id}
                   to={`/marketplace?category=${hoveredCategory.id}&subcategory=${sub.id}`}
                   className="
-                    rounded-full
+                    flex
+                    items-center
+                    justify-between
+                    rounded-lg
                     border
-                    border-muted-foreground/10
-                    bg-muted/20
-                    px-3.5
-                    py-1.5
+                    border-muted/30
+                    bg-muted/10
+                    px-4
+                    py-3
                     text-xs
                     font-medium
                     text-foreground/80
                     transition-all
-                    duration-150
-                    hover:bg-primary
-                    hover:text-white
-                    hover:border-primary
-                    hover:-translate-y-0.5
+                    duration-200
+                    hover:bg-primary/5
+                    hover:text-primary
+                    hover:border-primary/40
+                    hover:translate-x-1
                   "
                 >
-                  {sub.name}
+                  <span>{sub.name}</span>
+                  <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </Link>
               ))}
             </div>
@@ -218,9 +259,9 @@ export function PopularChips({
       {/* ------------------------------------------------ */}
       {/* 2. Seamless Grid: Premium Architectural Interface */}
       {/* ------------------------------------------------ */}
-      <section className="py-0 bg-background border-b border-muted/30">
+      <section className="py-0 bg-background border-b border-muted/30 relative z-10">
         <div className="container mx-auto">  
-          <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-0">
+          <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-0">
             {marketplaceCategories.map((category) => {
               const Icon = category.icon;
               const categoryCount = category.count; 
@@ -246,11 +287,11 @@ export function PopularChips({
                     aspect-square
                   "
                 >
-                  {/* IMAGE & INTERACTIVE STATES */}
                   <div className="relative w-full h-full overflow-hidden">
                     <img
                       src={category.image}
                       alt={category.name}
+                      loading="lazy"
                       className="
                         w-full
                         h-full
@@ -264,7 +305,6 @@ export function PopularChips({
                       "
                     />
 
-                    {/* Dark gradient base that fades out on hover to showcase the pure image */}
                     <div className="
                       absolute
                       inset-0
@@ -278,7 +318,6 @@ export function PopularChips({
                       duration-500
                     " />
 
-                    {/* Left Icon (Always Clean White) */}
                     {Icon && (
                       <div className="
                         absolute
@@ -296,7 +335,6 @@ export function PopularChips({
                       </div>
                     )}
 
-                    {/* Dynamic Tag / Status Badge */}
                     <div className={`
                       absolute
                       top-3
@@ -326,7 +364,6 @@ export function PopularChips({
                       )}
                     </div>
 
-                    {/* Integrated Typography on Image Center-Bottom */}
                     <div className="
                       absolute
                       bottom-0
