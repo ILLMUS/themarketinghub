@@ -170,7 +170,7 @@ const hoveredCategory = marketplaceCategories.find(
 
 
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-4">
+            <div className="grid grid-cols-6 sm:grid-cols-6 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
             {marketplaceCategories.map((category) => {
 
               const Icon = category.icon;
@@ -254,37 +254,37 @@ const hoveredCategory = marketplaceCategories.find(
                     {/* Listing Count Placeholder */}
 
                     <div
-  className="
-    absolute
-    bottom-1
-    right-1
-    sm:bottom-2
-    sm:right-2
+                    className="
+                      absolute
+                      bottom-1
+                      right-1
+                      sm:bottom-2
+                      sm:right-2
 
-    rounded-full
-    bg-primary
-    text-white
+                      rounded-full
+                      bg-primary
+                      text-white
 
-    text-[7px]
-    sm:text-[8px]
-    md:text-[9px]
-    lg:text-[8px]
-    xl:text-[7px]
+                      text-[7px]
+                      sm:text-[8px]
+                      md:text-[9px]
+                      lg:text-[8px]
+                      xl:text-[7px]
 
-    font-semibold
-    leading-none
-    whitespace-nowrap
+                      font-semibold
+                      leading-none
+                      whitespace-nowrap
 
-    px-1
-    sm:px-1.5
-    md:px-2
+                      px-1
+                      sm:px-1.5
+                      md:px-2
 
-    py-0.5
-    shadow-md
-  "
->
-  Coming Soon
-</div>
+                      py-0.5
+                      shadow-md
+                    "
+                  >
+                   Soon
+                  </div>
 
                   </div>
 
