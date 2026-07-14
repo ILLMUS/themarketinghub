@@ -58,7 +58,7 @@ export function PopularChips({
 
   return (
     <>
-      {/* Injecting CSS Keyframes dynamically for the 15s fading glow border loop */}
+      {/* Dynamic Keyframes for Border Loops, Floating Clouds, and Swipe Text pulses */}
       <style>{`
         @keyframes spinSlow {
           0% { transform: rotate(0deg); }
@@ -66,6 +66,33 @@ export function PopularChips({
         }
         .animate-border-loop {
           animation: spinSlow 15s linear infinite;
+        }
+
+        /* Blue and Yellow floating cloud animations */
+        @keyframes cloudMoveLeft {
+          0% { transform: translate(-20%, -20%) scale(1); }
+          50% { transform: translate(30%, 20%) scale(1.1); }
+          100% { transform: translate(-20%, -20%) scale(1); }
+        }
+        @keyframes cloudMoveRight {
+          0% { transform: translate(20%, 20%) scale(1.1); }
+          50% { transform: translate(-30%, -20%) scale(0.9); }
+          100% { transform: translate(20%, 20%) scale(1.1); }
+        }
+        .animate-cloud-1 {
+          animation: cloudMoveLeft 8s ease-in-out infinite;
+        }
+        .animate-cloud-2 {
+          animation: cloudMoveRight 10s ease-in-out infinite;
+        }
+
+        /* 5-second fade in / out looping animation for scroll instruction text */
+        @keyframes fadePulse {
+          0%, 100% { opacity: 0; }
+          10%, 90% { opacity: 0.85; }
+        }
+        .animate-fade-pulse {
+          animation: fadePulse 5s ease-in-out infinite;
         }
       `}</style>
 
@@ -114,7 +141,7 @@ export function PopularChips({
                 " />
               </div>
               
-              {/* Inner Solid Card Body to mask the background and act as the true button background */}
+              {/* Inner Solid Card Body */}
               <div className="
                 relative 
                 z-10 
@@ -196,7 +223,7 @@ export function PopularChips({
           </div>
         </div>
 
-        {/* Dynamic Nested Subcategory Panel (Highest z-index overlay & 4-Column Directory Layout) */}
+        {/* Dynamic Nested Subcategory Panel */}
         <div 
           onMouseEnter={() => hoveredCategory && setActiveCategory(hoveredCategory.id)}
           onMouseLeave={() => setActiveCategory(null)}
@@ -260,8 +287,28 @@ export function PopularChips({
       {/* 2. Seamless Grid: Premium Architectural Interface */}
       {/* ------------------------------------------------ */}
       <section className="py-0 bg-background border-b border-muted/30 relative z-10">
+        
+        {/* Animated Swipe Helper: Only visible on small mobile screens */}
+        <div className="block sm:hidden w-full text-center py-1.5 bg-muted/20 border-b border-muted/20">
+          <span className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase animate-fade-pulse">
+            Swipe to Explore →
+          </span>
+        </div>
+
         <div className="container mx-auto">  
-          <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-0">
+          {/* Horizontal custom scrolling grid on mobile (4.5 items view), native grid structure on larger displays */}
+          <div className="
+            flex 
+            overflow-x-auto 
+            scrollbar-hide 
+            gap-0
+            sm:gap-0 
+            sm:grid 
+            sm:grid-cols-4 
+            md:grid-cols-6 
+            lg:grid-cols-8 
+            xl:grid-cols-10
+          ">
             {marketplaceCategories.map((category) => {
               const Icon = category.icon;
               const categoryCount = category.count; 
@@ -273,21 +320,23 @@ export function PopularChips({
                   to={`/marketplace?category=${category.id}`}
                   className="
                     group
-                    relative
-                    rounded-none
-                    overflow-hidden
-                    border-r
-                    border-b
-                    border-muted/30
-                    bg-card
-                    transition-all
-                    duration-300
+                    flex-shrink-0
+                    /* Mobile: Displays 4 fully (22.2% each), 5th item split exactly in half (11.2%) */
+                    w-[22.2vw]
+                    sm:w-auto
                     flex
                     flex-col
-                    aspect-square
+                    bg-card
+                    border-r
+                    border-b
+                    border-muted/35
+                    transition-all
+                    duration-300
+                    p-0
                   "
                 >
-                  <div className="relative w-full h-full overflow-hidden">
+                  {/* Clean Visual Image Container - Absolutely NO border radius or spacing */}
+                  <div className="relative aspect-square w-full overflow-hidden rounded-none">
                     <img
                       src={category.image}
                       alt={category.name}
@@ -305,90 +354,104 @@ export function PopularChips({
                       "
                     />
 
-                    <div className="
-                      absolute
-                      inset-0
-                      bg-gradient-to-t
-                      from-black/95
-                      via-black/30
-                      to-black/10
-                      opacity-100
-                      group-hover:opacity-90
-                      transition-all
-                      duration-500
-                    " />
-
+                    {/* Micro icon container in top-left */}
                     {Icon && (
                       <div className="
                         absolute
-                        top-3
-                        left-3
-                        rounded-lg
-                        bg-white/10
+                        top-1.5
+                        left-1.5
+                        bg-black/40
                         backdrop-blur-md
-                        p-2
+                        p-1
                         transition-transform
                         duration-300
                         group-hover:scale-110
+                       border-none
                       ">
-                        <Icon className="h-4.5 w-4.5 text-white" />
+                        <Icon className="h-3 w-3 text-white" />
                       </div>
                     )}
+                  </div>
 
-                    <div className={`
-                      absolute
-                      top-3
-                      right-3
-                      rounded-full
-                      px-2
-                      py-0.5
-                      text-[8px]
-                      font-bold
+                  {/* Information block OUTSIDE the image container at all times */}
+                  <div className="p-1.5 sm:p-3 flex flex-col justify-between flex-grow gap-1.5">
+                    
+                    {/* Category Name Wrapper (Semibold, compact wrap at borders, no bold) */}
+                    <span className="
+                      block 
+                      text-[10px]
+                      sm:text-xs 
+                      font-semibold 
+                      text-foreground/90
                       tracking-wide
-                      uppercase
-                      shadow-md
-                      backdrop-blur-md
-                      transition-all
+                      break-words
+                      whitespace-normal
+                      leading-tight
+                      group-hover:text-primary
+                      transition-colors
                       duration-300
-                      ${isSoon 
-                        ? "bg-amber-500/90 text-amber-950 border border-amber-400/20" 
-                        : "bg-emerald-500/90 text-emerald-950 border border-emerald-400/20"
-                      }
-                    `}>
-                      {isSoon ? (
-                        <span className="flex items-center gap-0.5">
-                          <Sparkles className="w-2 h-2" /> Soon
-                        </span>
-                      ) : (
-                        `${categoryCount}`
-                      )}
-                    </div>
-
-                    <div className="
-                      absolute
-                      bottom-0
-                      left-0
-                      w-full
-                      p-3
-                      z-20
-                      flex
-                      flex-col
-                      justify-end
                     ">
-                      <span className="
-                        block 
-                        text-[11px] 
-                        sm:text-xs 
-                        font-bold 
-                        text-white
-                        tracking-wide
-                        truncate
-                        group-hover:text-primary
-                        transition-colors
-                        duration-300
-                      ">
-                        {category.name}
-                      </span>
+                      {category.name}
+                    </span>
+
+                    {/* Badge Block always rendered OUTSIDE image */}
+                    <div className="flex items-center mt-auto pt-1">
+                      {isSoon ? (
+                        /* Liquid dynamic blue and yellow background clouds */
+                        <div className="
+                          relative
+                          overflow-hidden
+                          rounded-none
+                          px-1.5
+                          py-0.5
+                          text-[8px]
+                          sm:text-[9px]
+                          font-semibold
+                          tracking-wide
+                          uppercase
+                          inline-flex
+                          items-center
+                          gap-0.5
+                          border
+                          border-blue-400/20
+                          text-blue-900
+                          dark:text-blue-100
+                          bg-blue-950/20
+                          w-full
+                          justify-center
+                        ">
+                          {/* Moving Yellow Cloud Layer */}
+                          <div className="absolute -inset-2 bg-yellow-400/30 blur-sm rounded-full animate-cloud-1 mix-blend-screen dark:mix-blend-color-dodge pointer-events-none" />
+                          {/* Moving Blue Cloud Layer */}
+                          <div className="absolute -inset-2 bg-blue-500/30 blur-sm rounded-full animate-cloud-2 mix-blend-screen dark:mix-blend-color-dodge pointer-events-none" />
+                          
+                          {/* Badge Content */}
+                          <span className="relative z-10 flex items-center gap-0.5 drop-shadow-sm">
+                            <Sparkles className="w-2 h-2 animate-pulse" /> Soon
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="
+                          rounded-none
+                          px-1.5
+                          py-0.5
+                          text-[8px]
+                          sm:text-[9px]
+                          font-semibold
+                          tracking-wide
+                          uppercase
+                          inline-flex
+                          items-center
+                          border
+                          bg-emerald-500/10 
+                          text-emerald-600 
+                          border-emerald-500/20
+                          w-full
+                          justify-center
+                        ">
+                          <span>{categoryCount} Items</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>
