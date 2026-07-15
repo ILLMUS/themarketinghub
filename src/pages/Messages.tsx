@@ -84,6 +84,32 @@ const MessagesPage = () => {
     enabled: !!activeConvoId,
   });
 
+  // --- NEW: Mark Messages as Read Mutation ---
+  const markAsReadMutation = useMutation({
+    mutationFn: async (convoId: string) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from("messages")
+        .update({ read: true })
+        .eq("conversation_id", convoId)
+        .neq("sender_id", user.id)
+        .eq("read", false);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Invalidate the conversations list and unread hook to clear badges instantly!
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
+    },
+  });
+
+  // --- NEW: Trigger Mark as Read on Open and on New Message ---
+  useEffect(() => {
+    if (activeConvoId && user) {
+      markAsReadMutation.mutate(activeConvoId);
+    }
+  }, [activeConvoId, messages, user]); // Refires if conversation changes OR new messages arrive
+
   // Realtime subscription
   useEffect(() => {
     if (!activeConvoId) return;
@@ -122,7 +148,7 @@ const MessagesPage = () => {
   });
 
   if (authLoading || convosLoading) {
-    return <div className="container py-20 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>;
+    return <div className="container py-20 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></div>;
   }
 
   const activeConvo = conversations?.find((c) => c.id === activeConvoId);
@@ -150,7 +176,7 @@ const MessagesPage = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(c.updated_at), "MMM d, h:mm a")}</p>
                   </div>
                   {(c as any).unread > 0 && (
-                    <span className="h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                    <span className="h-5 min-w-5 px-1 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 animate-in zoom-in-50 duration-200">
                       {(c as any).unread}
                     </span>
                   )}

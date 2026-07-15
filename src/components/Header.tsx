@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useSavedAds } from "@/hooks/useSavedAds"; // IMPORTED NEW HOOK HERE
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart, Users, Building } from "lucide-react";
 import { SearchAutocomplete } from "@/components/SearchAutocomplete";
@@ -34,7 +35,6 @@ import {
   Music,
 } from "lucide-react";
 
-
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
@@ -43,6 +43,10 @@ export function Header() {
   const [showPostText, setShowPostText] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const unreadCount = useUnreadMessages();
+  
+  // FETCH CURRENT SAVED ADS LIST FROM YOUR HOOK
+  const { savedAdIds } = useSavedAds();
+  const savedCount = savedAdIds?.length || 0;
 
   const { data: latestAds } = useQuery({
     queryKey: ["header-latest-ads"],
@@ -146,10 +150,15 @@ export function Header() {
           {user && (
             <button
               onClick={() => navigate("/saved")}
-              className="p-2 text-muted-foreground ml-[15px] hover:text-primary active:bg-muted rounded-full transition-all"
+              className="relative p-2 text-muted-foreground ml-[15px] hover:text-primary active:bg-muted rounded-full transition-all"
               aria-label="Saved Ads"
             >
               <Heart className="h-[21px] w-[21px]" />
+              {savedCount > 0 && (
+                <span className="absolute top-1 right-1 h-4 min-w-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                  {savedCount > 9 ? "9+" : savedCount}
+                </span>
+              )}
             </button>
           )}
         </div>
@@ -180,12 +189,17 @@ export function Header() {
           <div className="flex items-center justify-between py-2 px-6 mr-[-30px] ml-[-30px]">
             {user ? (
               <>
-                {/* Saved */}
+                {/* Saved Mobile Action */}
                 <button
                   onClick={() => navigate("/saved")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted active:scale-90 transition-all"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted active:scale-90 transition-all"
                 >
                   <Heart className="h-[19px] w-[19px]" />
+                  {savedCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 h-4 min-w-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                      {savedCount > 9 ? "9+" : savedCount}
+                    </span>
+                  )}
                 </button>
 
                 {/* Messages */}
@@ -290,8 +304,14 @@ export function Header() {
                 </span>
               </button>
               
-              <Button variant="ghost" size="icon" onClick={() => navigate("/saved")} title="Saved Ads" className="text-muted-foreground hover:text-primary rounded-full h-9 w-9">
+              {/* Saved Ads Desktop Icon Button */}
+              <Button variant="ghost" size="icon" onClick={() => navigate("/saved")} title="Saved Ads" className="relative text-muted-foreground hover:text-primary rounded-full h-9 w-9">
                 <Heart className="h-[19px] w-[19px]" />
+                {savedCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-[18px] min-w-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-sm animate-in zoom-in-50 duration-200">
+                    {savedCount > 9 ? "9+" : savedCount}
+                  </span>
+                )}
               </Button>
               
               <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} title="Messages" className="relative text-muted-foreground hover:text-primary rounded-full h-9 w-9">

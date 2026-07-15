@@ -10,14 +10,6 @@ import { Seo } from "@/hooks/useSeo";
 
 const LOCATIONS = ["All Locations", "Mbabane", "Manzini", "Siteki", "Big Bend", "Nhlangano", "Matsapha", "Piggs Peak"];
 
-// Explicit translation mapping to bridge navigation links directly to your exact database IDs
-const CATEGORY_MAP: Record<string, string> = {
-  "property": "30326520-bd9e-48b6-b93e-47cc5fe38001",  // Real Estate
-  "vehicles": "c8c81287-c0f4-42e1-b10b-cc522ad31a79",  // Vehicles
-  "pets": "6f52eb48-337b-4e66-85c6-d54c0607f43e",      // Livestock
-  "sale": "all"                                       // For Sale falls back to view all items
-};
-
 const MarketplacePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
@@ -29,18 +21,7 @@ const MarketplacePage = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryParam || "all");
   const [selectedLocation, setSelectedLocation] = useState("All Locations");
 
-  // Sync state cleanly when URL modifications take effect
-  useEffect(() => {
-    if (categoryParam) {
-      const lowerParam = categoryParam.toLowerCase();
-      // If it matches one of our short keywords, use the mapped UUID. Otherwise, use it directly (if it's already a UUID).
-      setSelectedCategory(CATEGORY_MAP[lowerParam] || categoryParam);
-    } else {
-      setSelectedCategory("all");
-    }
-    if (subcategoryParam) setSelectedSubcategory(subcategoryParam);
-  }, [categoryParam, subcategoryParam]);
-
+  // Fetch all categories with their newly created slugs
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -53,6 +34,29 @@ const MarketplacePage = () => {
     },
   });
 
+  // Automatically resolve whichever category matches the slug in the URL
+  useEffect(() => {
+    if (categoryParam && categories) {
+      const lowerParam = categoryParam.toLowerCase();
+      
+      // Match by slug first, fallback to standard matching by ID
+      const matchedCategory = categories.find(
+        (c) => c.slug === lowerParam || c.id === categoryParam
+      );
+
+      if (matchedCategory) {
+        setSelectedCategory(matchedCategory.id);
+      } else {
+        setSelectedCategory("all");
+      }
+    } else if (!categoryParam) {
+      setSelectedCategory("all");
+    }
+
+    if (subcategoryParam) setSelectedSubcategory(subcategoryParam);
+  }, [categoryParam, subcategoryParam, categories]);
+
+  // Fetch active listings
   const { data: ads, isLoading } = useQuery({
     queryKey: ["marketplace-ads", search, selectedCategory, selectedSubcategory, selectedLocation],
     queryFn: async () => {
@@ -63,7 +67,6 @@ const MarketplacePage = () => {
         .gte("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
 
-      // Clean condition check ensuring strict true UUID comparison logic execution
       if (selectedCategory && selectedCategory !== "all") {
         query = query.eq("category_id" as any, selectedCategory);
       }
@@ -95,9 +98,9 @@ const MarketplacePage = () => {
     if (val === "all") {
       searchParams.delete("category");
     } else {
-      // Find original map clean string reference if possible to save a clean name to the URL parameter
-      const reversedSlug = Object.keys(CATEGORY_MAP).find(key => CATEGORY_MAP[key] === val);
-      searchParams.set("category", reversedSlug || val);
+      // Safe extraction: Set the URL parameter to the dynamic slug instead of a hardcoded string
+      const chosen = categories?.find((c) => c.id === val);
+      searchParams.set("category", chosen?.slug || val);
     }
     searchParams.delete("subcategory");
     setSearchParams(searchParams);
