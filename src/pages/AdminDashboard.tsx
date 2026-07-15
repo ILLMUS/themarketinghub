@@ -140,10 +140,10 @@ const AdminDashboard = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
-  if (loading) return <div className="container py-20 text-center">Loading...</div>;
+  if (loading) return <div className="container px-4 py-20 text-center">Loading...</div>;
   if (!isAdmin) {
     return (
-      <div className="container py-20 text-center">
+      <div className="container px-4 py-20 text-center">
         <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
         <p className="text-muted-foreground mb-4">You need admin privileges to access this page.</p>
         <Button onClick={() => navigate("/")}>Go Home</Button>
@@ -162,32 +162,32 @@ const AdminDashboard = () => {
   const filterAds = (status?: AdStatus) => status ? allAds?.filter((a) => a.status === status) : allAds;
 
   const AdTable = ({ ads }: { ads: typeof allAds }) => (
-    <div className="border rounded-lg overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50">
-          <tr>
-            <th className="text-left p-3 font-medium">Title</th>
-            <th className="text-left p-3 font-medium hidden md:table-cell">Category</th>
-            <th className="text-left p-3 font-medium">Price</th>
-            <th className="text-left p-3 font-medium">Plan</th>
-            <th className="text-left p-3 font-medium">Status</th>
-            <th className="text-right p-3 font-medium">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ads?.map((ad) => (
-            <tr key={ad.id} className="border-t hover:bg-muted/30">
-              <td className="p-3">
-                <div className="flex items-center gap-2">
-                  {ad.is_featured && <Star className="h-3 w-3 text-accent fill-accent" />}
-                  <span className="font-medium line-clamp-1">{ad.title}</span>
+    <div>
+      {/* Responsive Cards for Mobile */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {ads?.map((ad) => (
+          <div key={ad.id} className="border rounded-xl p-4 bg-card space-y-3 relative">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-1.5">
+                {ad.is_featured && <Star className="h-4 w-4 mt-0.5 text-accent fill-accent shrink-0" />}
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground line-clamp-2">{ad.title}</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">{ad.categories?.name || "No Category"}</p>
                 </div>
-              </td>
-              <td className="p-3 hidden md:table-cell text-muted-foreground">{ad.categories?.name}</td>
-              <td className="p-3">E{ad.price.toLocaleString()}</td>
-              <td className="p-3">
+              </div>
+              <Badge variant={statusConfig[ad.status].variant} className="shrink-0 text-[10px]">
+                {statusConfig[ad.status].label}
+              </Badge>
+            </div>
+
+            <div className="flex items-center justify-between text-xs border-y py-2 border-border/60">
+              <div>
+                <span className="text-muted-foreground">Price:</span>{" "}
+                <span className="font-semibold text-foreground">E{ad.price.toLocaleString()}</span>
+              </div>
+              <div>
                 <Select value={ad.tier} onValueChange={(v) => updateTier.mutate({ id: ad.id, tier: v as AdTier })}>
-                  <SelectTrigger className={`h-8 w-[140px] text-xs border ${tierConfig[ad.tier].className}`}>
+                  <SelectTrigger className={`h-7 w-[125px] text-[11px] border ${tierConfig[ad.tier].className}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -196,153 +196,283 @@ const AdminDashboard = () => {
                     <SelectItem value="e250">E250 Standard</SelectItem>
                   </SelectContent>
                 </Select>
-              </td>
-              <td className="p-3">
-                <Badge variant={statusConfig[ad.status].variant}>
-                  {statusConfig[ad.status].label}
-                </Badge>
-              </td>
-              <td className="p-3">
-                <div className="flex justify-end gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => navigate(`/ad/${ad.id}`)} title="View">
-                    <Eye className="h-3.5 w-3.5" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-1 pt-1">
+              <Button size="sm" variant="ghost" onClick={() => navigate(`/ad/${ad.id}`)} title="View" className="h-8 w-8 p-0">
+                <Eye className="h-4 w-4" />
+              </Button>
+              {ad.status === "pending_payment" && (
+                <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: ad.id, status: "pending_approval" })} title="Confirm Payment" className="h-8 px-2 text-xs">
+                  <CreditCard className="h-3.5 w-3.5 mr-1" /> Pay
+                </Button>
+              )}
+              {ad.status === "pending_approval" && (
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" className="text-success h-8 px-2 text-xs" onClick={() => updateStatus.mutate({ id: ad.id, status: "approved" })} title="Approve">
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
                   </Button>
-                  {ad.status === "pending_payment" && (
-                    <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: ad.id, status: "pending_approval" })} title="Confirm Payment">
-                      <CreditCard className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {ad.status === "pending_approval" && (
-                    <>
-                      <Button size="sm" variant="outline" className="text-success" onClick={() => updateStatus.mutate({ id: ad.id, status: "approved" })} title="Approve">
-                        <CheckCircle className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-destructive" onClick={() => updateStatus.mutate({ id: ad.id, status: "rejected" })} title="Reject">
-                        <XCircle className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  )}
-                  <Button size="sm" variant="ghost" onClick={() => toggleFeatured.mutate({ id: ad.id, is_featured: !ad.is_featured })} title="Toggle Featured">
-                    <Star className={`h-3.5 w-3.5 ${ad.is_featured ? "fill-accent text-accent" : ""}`} />
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Delete this ad?")) deleteAd.mutate(ad.id); }} title="Delete">
-                    <Trash2 className="h-3.5 w-3.5" />
+                  <Button size="sm" variant="outline" className="text-destructive h-8 px-2 text-xs" onClick={() => updateStatus.mutate({ id: ad.id, status: "rejected" })} title="Reject">
+                    <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
                   </Button>
                 </div>
-              </td>
-            </tr>
-          ))}
-          {(!ads || ads.length === 0) && (
-            <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No advertisements</td></tr>
-          )}
-        </tbody>
-      </table>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => toggleFeatured.mutate({ id: ad.id, is_featured: !ad.is_featured })} title="Toggle Featured" className="h-8 w-8 p-0">
+                <Star className={`h-4 w-4 ${ad.is_featured ? "fill-accent text-accent" : ""}`} />
+              </Button>
+              <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => { if (confirm("Delete this ad?")) deleteAd.mutate(ad.id); }} title="Delete">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        {(!ads || ads.length === 0) && (
+          <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground text-sm">No advertisements</div>
+        )}
+      </div>
+
+      {/* Desktop Table Layout */}
+      <div className="hidden md:block border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left p-3 font-medium">Title</th>
+                <th className="text-left p-3 font-medium">Category</th>
+                <th className="text-left p-3 font-medium">Price</th>
+                <th className="text-left p-3 font-medium">Plan</th>
+                <th className="text-left p-3 font-medium">Status</th>
+                <th className="text-right p-3 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ads?.map((ad) => (
+                <tr key={ad.id} className="border-t hover:bg-muted/30">
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      {ad.is_featured && <Star className="h-3.5 w-3.5 text-accent fill-accent shrink-0" />}
+                      <span className="font-medium line-clamp-1">{ad.title}</span>
+                    </div>
+                  </td>
+                  <td className="p-3 text-muted-foreground">{ad.categories?.name || "No Category"}</td>
+                  <td className="p-3 font-medium">E{ad.price.toLocaleString()}</td>
+                  <td className="p-3">
+                    <Select value={ad.tier} onValueChange={(v) => updateTier.mutate({ id: ad.id, tier: v as AdTier })}>
+                      <SelectTrigger className={`h-8 w-[140px] text-xs border ${tierConfig[ad.tier].className}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="e500">E500 Spotlight</SelectItem>
+                        <SelectItem value="e350">E350 Boosted</SelectItem>
+                        <SelectItem value="e250">E250 Standard</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="p-3">
+                    <Badge variant={statusConfig[ad.status].variant}>
+                      {statusConfig[ad.status].label}
+                    </Badge>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => navigate(`/ad/${ad.id}`)} title="View">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      {ad.status === "pending_payment" && (
+                        <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: ad.id, status: "pending_approval" })} title="Confirm Payment">
+                          <CreditCard className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {ad.status === "pending_approval" && (
+                        <>
+                          <Button size="sm" variant="outline" className="text-success" onClick={() => updateStatus.mutate({ id: ad.id, status: "approved" })} title="Approve">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-destructive" onClick={() => updateStatus.mutate({ id: ad.id, status: "rejected" })} title="Reject">
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => toggleFeatured.mutate({ id: ad.id, is_featured: !ad.is_featured })} title="Toggle Featured">
+                        <Star className={`h-3.5 w-3.5 ${ad.is_featured ? "fill-accent text-accent" : ""}`} />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Delete this ad?")) deleteAd.mutate(ad.id); }} title="Delete">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {(!ads || ads.length === 0) && (
+                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No advertisements</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <div className="container py-8">
-      <div className="flex items-center gap-3 mb-8">
-        <LayoutDashboard className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Manage advertisements and categories</p>
+    <div className="container px-4 py-6 md:py-8 max-w-7xl mx-auto">
+      
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+            <LayoutDashboard className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">Manage advertisements and users</p>
+          </div>
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="all">All Ads</TabsTrigger>
-          <TabsTrigger value="pending_payment">
-            <CreditCard className="h-3.5 w-3.5 mr-1" /> Payment ({counts.pending_payment})
-          </TabsTrigger>
-          <TabsTrigger value="pending_approval">
-            <Clock className="h-3.5 w-3.5 mr-1" /> Approval ({counts.pending_approval})
-          </TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
-          <TabsTrigger value="users">
-            <Users className="h-3.5 w-3.5 mr-1" /> Users ({users?.length ?? 0})
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
+        <div className="w-full overflow-x-auto scrollbar-none border-b border-border">
+          <TabsList className="h-auto w-full justify-start gap-1 bg-transparent p-0 pb-px rounded-none flex flex-nowrap min-w-max">
+            <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">All Ads</TabsTrigger>
+            <TabsTrigger value="pending_payment" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
+              <CreditCard className="h-3.5 w-3.5" /> Payment ({counts.pending_payment})
+            </TabsTrigger>
+            <TabsTrigger value="pending_approval" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
+              <Clock className="h-3.5 w-3.5" /> Approval ({counts.pending_approval})
+            </TabsTrigger>
+            <TabsTrigger value="approved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Approved</TabsTrigger>
+            <TabsTrigger value="rejected" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Rejected</TabsTrigger>
+            <TabsTrigger value="users" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
+              <Users className="h-3.5 w-3.5" /> Users ({users?.length ?? 0})
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="overview">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <TabsContent value="overview" className="space-y-6 mt-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
             {[
               { label: "Total Ads", count: counts.total, icon: FileText, color: "text-primary" },
-              { label: "Pending Payment", count: counts.pending_payment, icon: CreditCard, color: "text-accent" },
-              { label: "Pending Approval", count: counts.pending_approval, icon: Clock, color: "text-accent" },
-              { label: "Approved", count: counts.approved, icon: CheckCircle, color: "text-success" },
+              { label: "Pending Payment", count: counts.pending_payment, icon: CreditCard, color: "text-amber-500" },
+              { label: "Pending Approval", count: counts.pending_approval, icon: Clock, color: "text-blue-500" },
+              { label: "Approved", count: counts.approved, icon: CheckCircle, color: "text-green-500" },
               { label: "Rejected", count: counts.rejected, icon: XCircle, color: "text-destructive" },
             ].map((item) => (
-              <div key={item.label} className="border rounded-xl p-4 bg-card">
-                <item.icon className={`h-5 w-5 ${item.color} mb-2`} />
-                <p className="text-2xl font-bold">{item.count}</p>
-                <p className="text-xs text-muted-foreground">{item.label}</p>
+              <div key={item.label} className="border rounded-xl p-3 md:p-4 bg-card shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-xs text-muted-foreground font-medium line-clamp-1">{item.label}</p>
+                  <item.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                </div>
+                <p className="text-xl md:text-2xl font-bold tracking-tight">{item.count}</p>
               </div>
             ))}
           </div>
 
-          <h3 className="font-semibold mb-3">Recent Advertisements</h3>
-          <AdTable ads={allAds?.slice(0, 10)} />
+          <div className="space-y-3">
+            <h3 className="font-semibold text-base md:text-lg">Recent Advertisements</h3>
+            <AdTable ads={allAds?.slice(0, 10)} />
+          </div>
         </TabsContent>
 
-        <TabsContent value="all"><AdTable ads={allAds} /></TabsContent>
-        <TabsContent value="pending_payment"><AdTable ads={filterAds("pending_payment")} /></TabsContent>
-        <TabsContent value="pending_approval"><AdTable ads={filterAds("pending_approval")} /></TabsContent>
-        <TabsContent value="approved"><AdTable ads={filterAds("approved")} /></TabsContent>
-        <TabsContent value="rejected"><AdTable ads={filterAds("rejected")} /></TabsContent>
+        <TabsContent value="all" className="mt-0"><AdTable ads={allAds} /></TabsContent>
+        <TabsContent value="pending_payment" className="mt-0"><AdTable ads={filterAds("pending_payment")} /></TabsContent>
+        <TabsContent value="pending_approval" className="mt-0"><AdTable ads={filterAds("pending_approval")} /></TabsContent>
+        <TabsContent value="approved" className="mt-0"><AdTable ads={filterAds("approved")} /></TabsContent>
+        <TabsContent value="rejected" className="mt-0"><AdTable ads={filterAds("rejected")} /></TabsContent>
 
-        <TabsContent value="users">
-          <div className="border rounded-lg overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-3 font-medium">Name</th>
-                  <th className="text-left p-3 font-medium hidden md:table-cell">Joined</th>
-                  <th className="text-left p-3 font-medium">Role</th>
-                  <th className="text-right p-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users?.map((u) => {
-                  const userIsAdmin = u.roles.some((r) => r.role === "admin");
-                  return (
-                    <tr key={u.id} className="border-t hover:bg-muted/30">
-                      <td className="p-3 font-medium">{u.name}</td>
-                      <td className="p-3 hidden md:table-cell text-muted-foreground">
-                        {new Date(u.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-3">
-                        <Badge variant={userIsAdmin ? "default" : "secondary"}>
-                          {userIsAdmin ? (
-                            <><Shield className="h-3 w-3 mr-1" /> Admin</>
-                          ) : (
-                            <><UserCheck className="h-3 w-3 mr-1" /> User</>
-                          )}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-right">
-                        <Button
-                          size="sm"
-                          variant={userIsAdmin ? "destructive" : "outline"}
-                          onClick={() => {
-                            if (userIsAdmin && !confirm("Remove admin role from this user?")) return;
-                            toggleRole.mutate({ userId: u.user_id, isCurrentlyAdmin: userIsAdmin });
-                          }}
-                        >
-                          {userIsAdmin ? "Remove Admin" : "Make Admin"}
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {(!users || users.length === 0) && (
-                  <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No users found</td></tr>
-                )}
-              </tbody>
-            </table>
+        <TabsContent value="users" className="mt-0">
+          {/* Responsive Cards for Mobile */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {users?.map((u) => {
+              const userIsAdmin = u.roles.some((r) => r.role === "admin");
+              return (
+                <div key={u.id} className="border rounded-xl p-4 bg-card space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground">{u.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Joined {new Date(u.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge variant={userIsAdmin ? "default" : "secondary"} className="text-[10px]">
+                      {userIsAdmin ? (
+                        <><Shield className="h-3 w-3 mr-1" /> Admin</>
+                      ) : (
+                        <><UserCheck className="h-3 w-3 mr-1" /> User</>
+                      )}
+                    </Badge>
+                  </div>
+                  <div className="pt-2 border-t border-border/60 flex justify-end">
+                    <Button
+                      size="sm"
+                      className="w-full text-xs"
+                      variant={userIsAdmin ? "destructive" : "outline"}
+                      onClick={() => {
+                        if (userIsAdmin && !confirm("Remove admin role from this user?")) return;
+                        toggleRole.mutate({ userId: u.user_id, isCurrentlyAdmin: userIsAdmin });
+                      }}
+                    >
+                      {userIsAdmin ? "Remove Admin Role" : "Promote to Admin"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {(!users || users.length === 0) && (
+              <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground text-sm">No users found</div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-3 font-medium">Name</th>
+                    <th className="text-left p-3 font-medium">Joined</th>
+                    <th className="text-left p-3 font-medium">Role</th>
+                    <th className="text-right p-3 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users?.map((u) => {
+                    const userIsAdmin = u.roles.some((r) => r.role === "admin");
+                    return (
+                      <tr key={u.id} className="border-t hover:bg-muted/30">
+                        <td className="p-3 font-medium">{u.name}</td>
+                        <td className="p-3 text-muted-foreground">
+                          {new Date(u.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="p-3">
+                          <Badge variant={userIsAdmin ? "default" : "secondary"}>
+                            {userIsAdmin ? (
+                              <><Shield className="h-3 w-3 mr-1" /> Admin</>
+                            ) : (
+                              <><UserCheck className="h-3 w-3 mr-1" /> User</>
+                            )}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          <Button
+                            size="sm"
+                            variant={userIsAdmin ? "destructive" : "outline"}
+                            onClick={() => {
+                              if (userIsAdmin && !confirm("Remove admin role from this user?")) return;
+                              toggleRole.mutate({ userId: u.user_id, isCurrentlyAdmin: userIsAdmin });
+                            }}
+                          >
+                            {userIsAdmin ? "Remove Admin" : "Make Admin"}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {(!users || users.length === 0) && (
+                    <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No users found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
