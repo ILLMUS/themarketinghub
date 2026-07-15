@@ -34,6 +34,7 @@ import {
   Music,
 } from "lucide-react";
 
+
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();

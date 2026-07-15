@@ -9,10 +9,9 @@ import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import AdDetails from "./pages/AdDetails";
 import PostAd from "./pages/PostAd";
-
 import HowItWorks from "@/pages/HowItWorks";
-
 import Categories from "./pages/Categories";
+import {MarketplaceCategoryPage}  from "./pages/MarketplaceCategoryPage"; // Added your new dynamic page template import
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import About from "./pages/About";
@@ -22,8 +21,8 @@ import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
 import SavedAds from "./pages/SavedAds";
 import NotFound from "./pages/NotFound";
-
 import ComingSoon from "./pages/ComingSoon";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -35,24 +34,33 @@ const App = () => (
         <AuthProvider>
           <Layout>
             <Routes>
+              {/* Core Application Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/ad/:id" element={<AdDetails />} />
               <Route path="/post-ad" element={<PostAd />} />
+              
+              {/* CATEGORY ROUTING 
+                /categories handles the broad overview dashboard.
+                /categories/:categoryId dynamically handles matching profiles (vehicles, pets, services, etc.)
+              */}
               <Route path="/categories" element={<Categories />} />
+              <Route path="/categories/:categoryId" element={<MarketplaceCategoryPage />} />
+              
+              {/* Authentication & User Workspace */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/saved" element={<SavedAds />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              
+              {/* Informational Pages */}
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="*" element={<NotFound />} />
 
-               {/* Coming Soon */}
-
+              {/* Coming Soon Templates */}
               <Route path="/buying-guide" element={<ComingSoon />} />
               <Route path="/selling-guide" element={<ComingSoon />} />
               <Route path="/privacy-policy" element={<ComingSoon />} />
@@ -61,6 +69,9 @@ const App = () => (
               <Route path="/featured" element={<ComingSoon />} />
               <Route path="/latest" element={<ComingSoon />} />
               <Route path="/faq" element={<ComingSoon />} />
+              
+              {/* 404 Catch-All Page */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
         </AuthProvider>

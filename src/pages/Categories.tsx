@@ -29,90 +29,75 @@ const CategoriesPage = () => {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
         {marketplaceCategories.map((category) => {
-
-          const Icon = category.icon;
-
           return (
+            <div
+              key={category.id}
+              className="
+                rounded-2xl
+                border
+                bg-card
+                shadow-sm
+                hover:shadow-lg
+                transition-all
+                duration-300
+                p-5
+                flex
+                flex-col
+              "
+            >
+              {/* Main Category Header Link */}
+              <Link 
+                to={`/marketplace?category=${category.id}`}
+                className="flex items-center gap-4 group"
+              >
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className="
+                    h-20
+                    w-20
+                    rounded-xl
+                    object-cover
+                    flex-shrink-0
+                    transition-transform
+                    group-hover:scale-[1.03]
+                  "
+                />
+                <div>
+                  <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                    {category.name}
+                  </h3>
+                </div>
+              </Link>
 
-          <Link
-  key={category.id}
-  to={`/marketplace?category=${category.id}`}
-  className="
-    rounded-2xl
-    border
-    bg-card
-    shadow-sm
-    hover:shadow-lg
-    transition-all
-    duration-300
-    p-5
-  "
->
+              {/* Divider */}
+              <div className="my-5 border-t" />
 
-  {/* Header */}
-
-  <div className="flex items-center gap-4">
-
-    <img
-      src={category.image}
-      alt={category.name}
-      className="
-        h-20
-        w-20
-        rounded-xl
-        object-cover
-        flex-shrink-0
-      "
-    />
-
-    <div>
-
-      <h3 className="text-xl font-bold text-foreground">
-
-        {category.name}
-
-      </h3>
-
-    </div>
-
-  </div>
-
-  {/* Divider */}
-
-  <div className="my-5 border-t" />
-
-  {/* Subcategories */}
-
-  <div className="space-y-2">
-
-    {category.subcategories.map((sub) => (
-
-      <p
-        key={sub.id}
-        className="
-          text-sm
-          text-muted-foreground
-        "
-      >
-
-        • {sub.name}
-
-      </p>
-
-    ))}
-
-  </div>
-
-</Link>
-
+              {/* Subcategories List Links */}
+              <div className="space-y-2 flex-1">
+                {category.subcategories.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    to={`/marketplace?category=${category.id}&subcategory=${sub.id}`}
+                    className="
+                      block
+                      text-sm
+                      text-muted-foreground
+                      hover:text-primary
+                      hover:underline
+                      transition-colors
+                      py-0.5
+                    "
+                  >
+                    • {sub.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
           );
-
         })}
-
       </div>
-
     </div>
   );
 };
