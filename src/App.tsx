@@ -11,9 +11,10 @@ import AdDetails from "./pages/AdDetails";
 import PostAd from "./pages/PostAd";
 import HowItWorks from "@/pages/HowItWorks";
 import Categories from "./pages/Categories";
-import {MarketplaceCategoryPage}  from "./pages/MarketplaceCategoryPage"; // Added your new dynamic page template import
+import { MarketplaceCategoryPage } from "./pages/MarketplaceCategoryPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ResetPasswordPage from "./pages/ResetPasswordPage"; // Import ResetPasswordPage
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -50,6 +51,7 @@ const App = () => (
               {/* Authentication & User Workspace */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/saved" element={<SavedAds />} />

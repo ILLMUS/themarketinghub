@@ -6,7 +6,10 @@ import { AdCard } from "@/components/AdCard";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { Seo } from "@/hooks/useSeo";
+import * as SeoModule from "@/hooks/useSeo";
+
+// Safe fallback for Seo hook/component
+const Seo = (SeoModule as any).Seo || (SeoModule as any).default || (() => null);
 
 const LOCATIONS = ["All Locations", "Mbabane", "Manzini", "Siteki", "Big Bend", "Nhlangano", "Matsapha", "Piggs Peak"];
 
@@ -21,7 +24,7 @@ const MarketplacePage = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryParam || "all");
   const [selectedLocation, setSelectedLocation] = useState("All Locations");
 
-  // Fetch all categories with their newly created slugs
+  // 1. Fetch categories from Supabase
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -34,14 +37,28 @@ const MarketplacePage = () => {
     },
   });
 
-  // Automatically resolve whichever category matches the slug in the URL
+  // 2. Dynamically fetch subcategories from Supabase based on the active category
+  const { data: subcategories } = useQuery({
+    queryKey: ["subcategories", selectedCategory],
+    queryFn: async () => {
+      if (!selectedCategory || selectedCategory === "all") return [];
+      const { data, error } = await supabase
+        .from("subcategories")
+        .select("*")
+        .eq("category_id", selectedCategory)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedCategory && selectedCategory !== "all",
+  });
+
+  // Resolve category slug or ID from URL
   useEffect(() => {
     if (categoryParam && categories) {
       const lowerParam = categoryParam.toLowerCase();
-      
-      // Match by slug first, fallback to standard matching by ID
       const matchedCategory = categories.find(
-        (c) => c.slug === lowerParam || c.id === categoryParam
+        (c: any) => c.slug === lowerParam || c.id === categoryParam
       );
 
       if (matchedCategory) {
@@ -56,7 +73,7 @@ const MarketplacePage = () => {
     if (subcategoryParam) setSelectedSubcategory(subcategoryParam);
   }, [categoryParam, subcategoryParam, categories]);
 
-  // Fetch active listings
+  // 3. Fetch active listings from Supabase
   const { data: ads, isLoading } = useQuery({
     queryKey: ["marketplace-ads", search, selectedCategory, selectedSubcategory, selectedLocation],
     queryFn: async () => {
@@ -94,25 +111,36 @@ const MarketplacePage = () => {
 
   const handleCategoryChange = (val: string) => {
     setSelectedCategory(val);
-    setSelectedSubcategory("all"); 
+    setSelectedSubcategory("all");
     if (val === "all") {
       searchParams.delete("category");
     } else {
-      // Safe extraction: Set the URL parameter to the dynamic slug instead of a hardcoded string
-      const chosen = categories?.find((c) => c.id === val);
+      const chosen = categories?.find((c: any) => c.id === val);
       searchParams.set("category", chosen?.slug || val);
     }
     searchParams.delete("subcategory");
     setSearchParams(searchParams);
   };
 
+  const handleSubcategoryChange = (val: string) => {
+    setSelectedSubcategory(val);
+    if (val === "all") {
+      searchParams.delete("subcategory");
+    } else {
+      searchParams.set("subcategory", val);
+    }
+    setSearchParams(searchParams);
+  };
+
   return (
-    <div className="container py-8">
-      <Seo
-        title={activeCategory ? `${activeCategory.name}${locationLabel} | Market Hub` : "Marketplace | Market Hub"}
-        description="Browse current listings across local markets."
-        url={window.location.origin}
-      />
+    <div className="container py-8 max-w-7xl mx-auto px-4">
+      {Seo && (
+        <Seo
+          title={activeCategory ? `${activeCategory.name}${locationLabel} | Market Hub` : "Marketplace | Market Hub"}
+          description="Browse current listings across local markets."
+          url={window.location.origin}
+        />
+      )}
       
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
@@ -120,8 +148,9 @@ const MarketplacePage = () => {
         </h1>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-8">
-        <div className="relative flex-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        {/* Search Bar */}
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search listings..."
@@ -131,8 +160,9 @@ const MarketplacePage = () => {
           />
         </div>
 
+        {/* Category Filter */}
         <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -143,8 +173,26 @@ const MarketplacePage = () => {
           </SelectContent>
         </Select>
 
+        {/* Dynamic Subcategory Filter (Shows when Category is Selected and Subcategories Exist) */}
+        {subcategories && subcategories.length > 0 ? (
+          <Select value={selectedSubcategory} onValueChange={handleSubcategoryChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Subcategory" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Subcategories</SelectItem>
+              {subcategories.map((sub: any) => (
+                <SelectItem key={sub.id} value={sub.slug || sub.name}>
+                  {sub.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+
+        {/* Location Filter */}
         <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Location" />
           </SelectTrigger>
           <SelectContent>
@@ -156,7 +204,11 @@ const MarketplacePage = () => {
       </div>
 
       {isLoading ? (
-        <div className="h-32 animate-pulse bg-muted rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="h-64 animate-pulse bg-muted rounded-xl" />
+          ))}
+        </div>
       ) : ads && ads.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {ads.map((ad: any) => (
@@ -167,6 +219,7 @@ const MarketplacePage = () => {
         <div className="text-center py-20 border rounded-2xl border-dashed">
           <SlidersHorizontal className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No listings found</h3>
+          <p className="text-sm text-muted-foreground">Try adjusting your category, subcategory, or search filters.</p>
         </div>
       )}
     </div>
