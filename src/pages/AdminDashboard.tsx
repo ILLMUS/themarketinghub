@@ -9,18 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Shield, UserCheck, Image as ImageIcon,
+  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Shield, UserCheck, Image as ImageIcon, Upload, Link as LinkIcon
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import { AdminAdManager } from "@/components/admin/AdminAdManager";
-// Temporary fallback component until src/components/admin/AdminAdManager.tsx is created
-const AdminAdManager = () => (
-  <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground">
-    <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-    <p className="font-medium text-foreground">Ad Manager Component</p>
-    <p className="text-xs mt-1">Create <code className="text-primary font-mono">src/components/admin/AdminAdManager.tsx</code> to load banner management here.</p>
-  </div>
-);
 
 type AdStatus = Database["public"]["Enums"]["ad_status"];
 type AdTier = Database["public"]["Enums"]["ad_tier"];
@@ -36,6 +27,223 @@ const statusConfig: Record<AdStatus, { label: string; variant: "default" | "seco
   pending_approval: { label: "Pending Approval", variant: "secondary" },
   approved: { label: "Approved", variant: "default" },
   rejected: { label: "Rejected", variant: "destructive" },
+};
+
+// --- Banner Manager Component ---
+const AdminAdManager = () => {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [position, setPosition] = useState("home_top");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Fetch active banners list
+  const { data: banners, isLoading: loadingBanners } = useQuery({
+    queryKey: ["admin-banners"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("banners").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUploadBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      toast.error("Please select an image file to upload");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `banner-${Date.now()}.${fileExt}`;
+      const filePath = `banners/${fileName}`;
+
+      // 1. Upload file to Supabase storage bucket
+      const { error: uploadError } = await supabase.storage
+        .from("banners")
+        .upload(filePath, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from("banners").getPublicUrl(filePath);
+      const imageUrl = publicUrlData.publicUrl;
+
+      // 2. Insert banner record into database table
+      const { error: dbError } = await supabase.from("banners").insert({
+        title,
+        image_url: imageUrl,
+        target_url: linkUrl || "#",
+        position,
+        is_active: true,
+      });
+
+      if (dbError) throw dbError;
+
+      toast.success("Banner published and active!");
+      queryClient.invalidateQueries({ queryKey: ["admin-banners"] });
+
+      // Reset
+      setTitle("");
+      setLinkUrl("");
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload banner");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const deleteBanner = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this banner?")) return;
+    try {
+      const { error } = await supabase.from("banners").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Banner removed");
+      queryClient.invalidateQueries({ queryKey: ["admin-banners"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="border rounded-xl p-5 bg-card shadow-sm space-y-4">
+        <div>
+          <h3 className="font-semibold text-lg flex items-center gap-2">
+            <Upload className="h-5 w-5 text-primary" /> Upload New Ad Banner
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Upload custom display banners to promote featured sellers, specials, or announcements.
+          </p>
+        </div>
+
+        <form onSubmit={handleUploadBanner} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">Banner Title / Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Summer Special Sale Header"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">Target Placement</label>
+              <Select value={position} onValueChange={setPosition}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="home_top">Home Page (Top Banner)</SelectItem>
+                  <SelectItem value="home_middle">Home Page (Middle Promo)</SelectItem>
+                  <SelectItem value="sidebar">Sidebar Banner</SelectItem>
+                  <SelectItem value="category_header">Category Top Banner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground flex items-center gap-1">
+              <LinkIcon className="h-3.5 w-3.5" /> Destination Link (URL)
+            </label>
+            <input
+              type="url"
+              placeholder="https://yourmarket.com/promotions or /ad/123"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Banner Image</label>
+            <div className="border-2 border-dashed border-border hover:border-primary/50 rounded-xl p-6 text-center transition-colors bg-muted/20 relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              {previewUrl ? (
+                <div className="space-y-3">
+                  <img src={previewUrl} alt="Preview" className="max-h-48 mx-auto rounded-lg object-contain border shadow-sm" />
+                  <p className="text-xs text-muted-foreground">{selectedFile?.name}</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="p-3 bg-primary/10 rounded-full text-primary">
+                    <ImageIcon className="h-6 w-6" />
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+                  </div>
+                  <p className="text-xs text-muted-foreground">PNG, JPG, WEBP, or GIF (Suggested size: 1200x300px)</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            {previewUrl && (
+              <Button type="button" variant="outline" size="sm" onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}>
+                Clear
+              </Button>
+            )}
+            <Button type="submit" size="sm" disabled={isUploading || !selectedFile}>
+              {isUploading ? "Uploading..." : "Save Banner"}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {/* Active Banners List */}
+      <div className="border rounded-xl p-5 bg-card shadow-sm space-y-4">
+        <h3 className="font-semibold text-base">Active Display Banners</h3>
+        {loadingBanners ? (
+          <p className="text-xs text-muted-foreground">Loading active banners...</p>
+        ) : banners && banners.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {banners.map((banner: any) => (
+              <div key={banner.id} className="border rounded-lg p-3 relative space-y-2 bg-muted/10">
+                <div className="aspect-[3/1] overflow-hidden rounded-md border bg-muted">
+                  <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-xs line-clamp-1">{banner.title}</p>
+                    <Badge variant="outline" className="text-[10px] mt-0.5">{banner.position}</Badge>
+                  </div>
+                  <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => deleteBanner(banner.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground text-center py-6">No custom banners currently uploaded.</p>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export const AdminDashboard = () => {
@@ -201,8 +409,8 @@ export const AdminDashboard = () => {
                   <p className="text-xs text-muted-foreground mt-0.5">{ad.categories?.name || "No Category"}</p>
                 </div>
               </div>
-              <Badge variant={statusConfig[ad.status].variant} className="shrink-0 text-[10px]">
-                {statusConfig[ad.status].label}
+              <Badge variant={statusConfig[ad.status as AdStatus].variant} className="shrink-0 text-[10px]">
+                {statusConfig[ad.status as AdStatus].label}
               </Badge>
             </div>
 
@@ -213,7 +421,7 @@ export const AdminDashboard = () => {
               </div>
               <div>
                 <Select value={ad.tier} onValueChange={(v) => updateTier.mutate({ id: ad.id, tier: v as AdTier })}>
-                  <SelectTrigger className={`h-7 w-[125px] text-[11px] border ${tierConfig[ad.tier].className}`}>
+                  <SelectTrigger className={`h-7 w-[125px] text-[11px] border ${tierConfig[ad.tier as AdTier].className}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -285,7 +493,7 @@ export const AdminDashboard = () => {
                   <td className="p-3 font-medium">E{ad.price.toLocaleString()}</td>
                   <td className="p-3">
                     <Select value={ad.tier} onValueChange={(v) => updateTier.mutate({ id: ad.id, tier: v as AdTier })}>
-                      <SelectTrigger className={`h-8 w-[140px] text-xs border ${tierConfig[ad.tier].className}`}>
+                      <SelectTrigger className={`h-8 w-[140px] text-xs border ${tierConfig[ad.tier as AdTier].className}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -296,8 +504,8 @@ export const AdminDashboard = () => {
                     </Select>
                   </td>
                   <td className="p-3">
-                    <Badge variant={statusConfig[ad.status].variant}>
-                      {statusConfig[ad.status].label}
+                    <Badge variant={statusConfig[ad.status as AdStatus].variant}>
+                      {statusConfig[ad.status as AdStatus].label}
                     </Badge>
                   </td>
                   <td className="p-3">
@@ -416,7 +624,7 @@ export const AdminDashboard = () => {
         <TabsContent value="users" className="mt-0">
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {users?.map((u) => {
-              const userIsAdmin = u.roles.some((r) => r.role === "admin");
+              const userIsAdmin = u.roles.some((r: { role: string }) => r.role === "admin");
               return (
                 <div key={u.id} className="border rounded-xl p-4 bg-card space-y-3">
                   <div className="flex items-center justify-between">
@@ -468,7 +676,7 @@ export const AdminDashboard = () => {
                 </thead>
                 <tbody>
                   {users?.map((u) => {
-                    const userIsAdmin = u.roles.some((r) => r.role === "admin");
+                    const userIsAdmin = u.roles.some((r: { role: string }) => r.role === "admin");
                     return (
                       <tr key={u.id} className="border-t hover:bg-muted/30">
                         <td className="p-3 font-medium">{u.name}</td>

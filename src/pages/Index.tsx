@@ -5,6 +5,7 @@ import { PopularChips } from "@/components/PopularChips";
 import { AdCard } from "@/components/AdCard";
 import { CategoryCard } from "@/components/CategoryCard";
 import { BannerSlider } from "@/components/BannerSlider";
+import { AdBanner } from "@/components/common/AdBanner";
 import { Button } from "@/components/ui/button";
 import { Search, ArrowRight, TrendingUp, Users, ShoppingBag, FileText, CheckCircle, DollarSign,
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Tag,
@@ -82,6 +83,7 @@ const HomePage = () => {
       return data;
     },
   });
+
   const { data: activeListingsCount = 0 } = useQuery({
     queryKey: ["active-listings-count"],
     queryFn: async () => {
@@ -100,6 +102,7 @@ const HomePage = () => {
       return count ?? 0;
     },
   });
+
   const heroSpotlights = spotlightAds ?? [];
   const belowHeroSpotlights: typeof heroSpotlights = [];
   const heroShouldSlide = heroSpotlights.length >= 5;
@@ -126,6 +129,11 @@ const HomePage = () => {
           },
         }}
       />
+
+      {/* 🌟 Top Position Banner */}
+      <div className="container mx-auto px-4 pt-4">
+        <AdBanner position="home_top" />
+      </div>
 
       {/* Hero */}
       <section className="bg-secondary/60 -hero text-primary-foreground overflow-hidden relative isolate">
@@ -271,7 +279,7 @@ const HomePage = () => {
       </section>
 
       {/* Dynamic Promotional Banner Slider */}
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 mt-6">
         <BannerSlider />
       </div>
 
@@ -335,6 +343,11 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* 🌟 Middle Position Banner */}
+      <div className="container mx-auto px-4 my-6">
+        <AdBanner position="home_middle" />
+      </div>
+
       {/* E250 Standard - Latest Listings */}
       <section className="container py-16">
         <div className="flex items-center justify-between mb-8">
@@ -361,6 +374,11 @@ const HomePage = () => {
           </div>
         )}
       </section>
+
+      {/* 🌟 Bottom Position Banner */}
+      <div className="container mx-auto px-4 mb-6">
+        <AdBanner position="home_bottom" />
+      </div>
 
       {/* CTA */}
       <section className="gradient-primary">
