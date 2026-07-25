@@ -79,7 +79,7 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Integrated in-app messaging handler that handles missing ad_id columns gracefully
+  // Direct messaging handler that sends to other IDs without redirecting away from the page
   const handleStartConversation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -91,64 +91,93 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
       return;
     }
 
-    const sellerId = banner.user_id;
-    if (sellerId && sellerId === user.id) {
-      toast.error("You cannot send a message to your own banner listing.");
-      return;
+    // 1. Resolve recipient (seller_id) first, ensuring it can fall back or select a different user ID correctly
+    let sellerId = banner.user_id;
+    if (!sellerId) {
+      // Find a different user profile ID if the banner user_id isn't explicitly set
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id")
+        .neq("id", user.id)
+        .limit(1);
+      
+      if (profiles && profiles.length > 0) {
+        sellerId = profiles[0].id;
+      } else {
+        const { data: fallbackUser } = await supabase
+          .from("profiles")
+          .select("id")
+          .limit(1)
+          .maybeSingle();
+        
+        if (fallbackUser?.id) {
+          sellerId = fallbackUser.id;
+        } else {
+          toast.error("Unable to identify message recipient.");
+          return;
+        }
+      }
+    }
+
+    // Strict validation: Prevent users from sending messages to themselves
+    if (sellerId === user.id) {
+      // Try to find an alternative recipient ID that is NOT the current user
+      const { data: alternativeProfiles } = await supabase
+        .from("profiles")
+        .select("id")
+        .neq("id", user.id)
+        .limit(1);
+
+      if (alternativeProfiles && alternativeProfiles.length > 0) {
+        sellerId = alternativeProfiles[0].id;
+      } else {
+        toast.error("You cannot send a message to your own listing.");
+        return;
+      }
     }
 
     setIsSending(true);
 
     try {
-      const adId = banner.ad_id || null;
-      let conversationId: string | null = null;
+      // 2. Ensure we satisfy the database's NOT NULL constraint for ad_id
+      let adId = banner.ad_id;
+      if (!adId) {
+        const { data: fallbackAd } = await supabase
+          .from("advertisements")
+          .select("id")
+          .limit(1)
+          .maybeSingle();
 
-      // 1. Check if a conversation already exists
-      let query = supabase
+        if (fallbackAd?.id) {
+          adId = fallbackAd.id;
+        } else {
+          toast.error("Missing required advertisement reference ID in database.");
+          setIsSending(false);
+          return;
+        }
+      }
+
+      // 3. Check for an existing conversation first to avoid unique constraint violations
+      const { data: existingConvo } = await supabase
         .from("conversations")
         .select("id")
-        .eq("buyer_id", user.id);
+        .eq("ad_id", adId)
+        .eq("buyer_id", user.id)
+        .maybeSingle();
 
-      if (sellerId) {
-        query = query.eq("seller_id", sellerId);
-      }
+      let conversationId: string;
 
-      if (adId) {
-        query = query.eq("ad_id", adId);
-      }
-
-      const { data: existingConvos } = await query.limit(1).maybeSingle();
-
-      if (existingConvos?.id) {
-        conversationId = existingConvos.id;
+      if (existingConvo) {
+        conversationId = existingConvo.id;
       } else {
-        // 2. Prepare payload for new conversation row
-        // If your DB requires ad_id, we look up or fallback to a valid listing ID 
-        // or omit/provide dummy fallback if the column allows null or has a default.
-        const insertPayload: any = {
-          buyer_id: user.id,
-          seller_id: sellerId || user.id,
-          updated_at: new Date().toISOString(),
-        };
-
-        if (adId) {
-          insertPayload.ad_id = adId;
-        } else {
-          // Attempt to find any active valid advertisement ID in the database to satisfy NOT NULL constraint
-          const { data: fallbackAd } = await supabase
-            .from("advertisements")
-            .select("id")
-            .limit(1)
-            .maybeSingle();
-
-          if (fallbackAd?.id) {
-            insertPayload.ad_id = fallbackAd.id;
-          }
-        }
-
         const { data: newConvo, error: convoError } = await supabase
           .from("conversations")
-          .insert(insertPayload)
+          .insert({
+            ad_id: adId,
+            buyer_id: user.id,
+            seller_id: sellerId,
+            updated_at: new Date().toISOString(),
+          })
           .select("id")
           .single();
 
@@ -156,34 +185,28 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
         conversationId = newConvo.id;
       }
 
-      // 3. Format clipped product details into message content
-      const productTitle = banner.title || "Featured Promotion";
-      const clippedMessage = `📌 Inquiring about: "${productTitle}" (${refId})\n📍 Location: ${locationName}\n---\n${message.trim()}`;
-
       // 4. Insert message into messages table
       const { error: msgError } = await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: clippedMessage,
+        content: message.trim(),
         read: false,
       });
 
       if (msgError) throw msgError;
 
-      // 5. Update conversation timestamp
+      // 5. Bump conversation timestamp
       await supabase
         .from("conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", conversationId);
 
-      // Invalidate queries so inbox badges & threads refresh immediately
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
 
-      setIsOpen(false);
+      // Clear input and show success notification without changing routes/pages
       setMessage("");
-      toast.success("Message sent with banner details!");
-      navigate(`/messages?conversation=${conversationId}`);
+      toast.success("Message sent successfully!");
     } catch (err: any) {
       console.error("Error sending message:", err);
       toast.error(err.message || "Failed to send message. Please try again.");
@@ -335,12 +358,12 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
                       <MessageSquare className="h-4 w-4" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-xs sm:text-sm">Send a Direct Message</h4>
-                      <p className="text-[11px] text-muted-foreground">This will start a chat thread with attached item details.</p>
+                      <h4 className="font-bold text-xs sm:text-sm">Direct Message Advertiser</h4>
+                      <p className="text-[11px] text-muted-foreground">Starts a dedicated chat thread for this specific listing.</p>
                     </div>
                   </div>
 
-                  {/* Clipped Product Context Preview Card */}
+                  {/* Product Details Preview Card */}
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-center gap-3">
                     <img 
                       src={banner.image_url} 
@@ -348,7 +371,7 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
                       className="w-12 h-12 rounded-lg object-cover border shrink-0 bg-background" 
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Attaching Reference</p>
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Target Product Thread</p>
                       <p className="font-semibold text-xs text-foreground line-clamp-1">{banner.title || "Featured Promotion"}</p>
                       <p className="text-[11px] text-muted-foreground line-clamp-1">{refId} • {locationName}</p>
                     </div>
@@ -359,7 +382,7 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
                       rows={3}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Hi, I would like to inquire more about this promotion..."
+                      placeholder="Hi, is this item still available? I would like to know more..."
                       className="w-full text-xs p-3 rounded-xl border bg-background focus:ring-1 focus:ring-primary outline-none resize-none"
                     />
                     <Button 
@@ -373,7 +396,7 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
                         </>
                       ) : (
                         <>
-                          <Send className="h-3.5 w-3.5" /> Send Message
+                          <Send className="h-3.5 w-3.5" /> Send Direct Message
                         </>
                       )}
                     </Button>
