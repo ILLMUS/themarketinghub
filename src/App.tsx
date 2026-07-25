@@ -14,7 +14,7 @@ import Categories from "./pages/Categories";
 import { MarketplaceCategoryPage } from "./pages/MarketplaceCategoryPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import ResetPasswordPage from "./pages/ResetPasswordPage"; // Import ResetPasswordPage
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -23,6 +23,11 @@ import Messages from "./pages/Messages";
 import SavedAds from "./pages/SavedAds";
 import NotFound from "./pages/NotFound";
 import ComingSoon from "./pages/ComingSoon";
+
+// Advertising Routes (Enabled)
+import Advertising from "./pages/admin/Advertising";
+import NewCampaign from "./pages/admin/NewCampaign";
+import EditCampaign from "./pages/admin/EditCampaign";
 
 const queryClient = new QueryClient();
 
@@ -41,10 +46,7 @@ const App = () => (
               <Route path="/ad/:id" element={<AdDetails />} />
               <Route path="/post-ad" element={<PostAd />} />
               
-              {/* CATEGORY ROUTING 
-                /categories handles the broad overview dashboard.
-                /categories/:categoryId dynamically handles matching profiles (vehicles, pets, services, etc.)
-              */}
+              {/* Category Routing */}
               <Route path="/categories" element={<Categories />} />
               <Route path="/categories/:categoryId" element={<MarketplaceCategoryPage />} />
               
@@ -55,7 +57,12 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/saved" element={<SavedAds />} />
+
+              {/* Admin Workspace */}
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/advertising" element={<Advertising />} />
+              <Route path="/admin/advertising/new" element={<NewCampaign />} />
+              <Route path="/admin/advertising/edit/:id" element={<EditCampaign />} />
               
               {/* Informational Pages */}
               <Route path="/about" element={<About />} />

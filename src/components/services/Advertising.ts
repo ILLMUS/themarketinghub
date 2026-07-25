@@ -1,228 +1,93 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface AdPosition {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  width: number | null;
-  height: number | null;
-  active: boolean;
-}
-
 export interface AdCampaign {
   id: string;
-
-  company_name: string;
-
   title: string;
-
-  description: string | null;
-
   image_url: string;
-
-  destination_url: string | null;
-
-  whatsapp: string | null;
-
-  position_id: string;
-
+  target_url?: string;
+  position: "homepage_banner" | "sidebar" | "category_header";
+  status: "active" | "draft" | "paused" | "expired";
   start_date: string;
-
   end_date: string;
-
-  active: boolean;
-
-  created_by: string | null;
-
-  approved_by: string | null;
-
-  created_at: string;
-
-  updated_at: string;
+  impressions?: number;
+  clicks?: number;
+  created_at?: string;
 }
 
-export interface CampaignForm {
-  company_name: string;
+export const getAdCampaigns = async (): Promise<AdCampaign[]> => {
+  const { data, error } = await supabase
+    .from("ad_campaigns")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  title: string;
+  if (error) {
+    console.warn("Failed to fetch ad campaigns:", error.message);
+    return [];
+  }
+  return data || [];
+};
 
-  description?: string;
+export const getAdCampaignById = async (id: string): Promise<AdCampaign | null> => {
+  const { data, error } = await supabase
+    .from("ad_campaigns")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  image_url: string;
+  if (error) {
+    console.error("Failed to fetch campaign details:", error.message);
+    return null;
+  }
+  return data;
+};
 
-  destination_url?: string;
+export const createAdCampaign = async (campaign: Omit<AdCampaign, "id" | "impressions" | "clicks" | "created_at">) => {
+  const { data, error } = await supabase
+    .from("ad_campaigns")
+    .insert([campaign])
+    .select()
+    .single();
 
-  whatsapp?: string;
+  if (error) throw error;
+  return data;
+};
 
-  position_id: string;
+export const updateAdCampaign = async (id: string, updates: Partial<AdCampaign>) => {
+  const { data, error } = await supabase
+    .from("ad_campaigns")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
 
-  start_date: string;
+  if (error) throw error;
+  return data;
+};
 
-  end_date: string;
+export const deleteAdCampaign = async (id: string) => {
+  const { error } = await supabase
+    .from("ad_campaigns")
+    .delete()
+    .eq("id", id);
 
-  active: boolean;
-}
+  if (error) throw error;
+  return true;
+};
 
-export const AdvertisingService = {
-  // =====================================================
-  // AD POSITIONS
-  // =====================================================
+export const uploadCampaignBanner = async (file: File): Promise<string> => {
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+  const filePath = `banners/${fileName}`;
 
-  async getPositions() {
-    const { data, error } = await supabase
-      .from("ad_positions")
-      .select("*")
-      .eq("active", true)
-      .order("name");
+  const { error: uploadError } = await supabase.storage
+    .from("ad-banners")
+    .upload(filePath, file);
 
-    if (error) throw error;
+  if (uploadError) throw uploadError;
 
-    return data;
-  },
+  const { data } = supabase.storage
+    .from("ad-banners")
+    .getPublicUrl(filePath);
 
-  // =====================================================
-  // ADMIN
-  // =====================================================
-
-  async getCampaigns() {
-    const { data, error } = await supabase
-      .from("ad_campaigns")
-      .select(
-        `
-        *,
-        ad_positions(
-          id,
-          name,
-          code
-        )
-      `
-      )
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (error) throw error;
-
-    return data;
-  },
-
-  // =====================================================
-  // PUBLIC
-  // =====================================================
-
-  async getBanner(positionCode: string) {
-    const now = new Date().toISOString();
-
-    const { data, error } = await supabase
-      .from("ad_campaigns")
-      .select(
-        `
-        *,
-        ad_positions!inner(
-          code,
-          name
-        )
-      `
-      )
-      .eq("active", true)
-      .eq("ad_positions.code", positionCode)
-      .lte("start_date", now)
-      .gte("end_date", now)
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    return data;
-  },
-
-  // =====================================================
-  // STORAGE
-  // =====================================================
-
-  async uploadBannerImage(file: File) {
-    const extension = file.name.split(".").pop();
-
-    const fileName = `${crypto.randomUUID()}.${extension}`;
-
-    const { error } = await supabase.storage
-      .from("banner-images")
-      .upload(fileName, file);
-
-    if (error) throw error;
-
-    const { data } = supabase.storage
-      .from("banner-images")
-      .getPublicUrl(fileName);
-
-    return data.publicUrl;
-  },
-
-  // =====================================================
-  // CREATE
-  // =====================================================
-
-  async createCampaign(campaign: CampaignForm) {
-    const { data, error } = await supabase
-      .from("ad_campaigns")
-      .insert(campaign)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return data;
-  },
-
-  // =====================================================
-  // UPDATE
-  // =====================================================
-
-  async updateCampaign(id: string, campaign: Partial<CampaignForm>) {
-    const { data, error } = await supabase
-      .from("ad_campaigns")
-      .update(campaign)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return data;
-  },
-
-  // =====================================================
-  // ENABLE / DISABLE
-  // =====================================================
-
-  async toggleCampaign(id: string, active: boolean) {
-    const { data, error } = await supabase
-      .from("ad_campaigns")
-      .update({
-        active,
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return data;
-  },
-
-  // =====================================================
-  // DELETE
-  // =====================================================
-
-  async deleteCampaign(id: string) {
-    const { error } = await supabase
-      .from("ad_campaigns")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-
-    return true;
-  },
+  return data.publicUrl;
 };

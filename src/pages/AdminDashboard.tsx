@@ -5,15 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Tag, Shield, UserCheck,
+  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Shield, UserCheck, Image as ImageIcon,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import SEO from "@/components/seo/SEO";
+import { AdminAdManager } from "@/components/admin/AdminAdManager";
+// Temporary fallback component until src/components/admin/AdminAdManager.tsx is created
+const AdminAdManager = () => (
+  <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground">
+    <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+    <p className="font-medium text-foreground">Ad Manager Component</p>
+    <p className="text-xs mt-1">Create <code className="text-primary font-mono">src/components/admin/AdminAdManager.tsx</code> to load banner management here.</p>
+  </div>
+);
 
 type AdStatus = Database["public"]["Enums"]["ad_status"];
 type AdTier = Database["public"]["Enums"]["ad_tier"];
@@ -31,7 +38,7 @@ const statusConfig: Record<AdStatus, { label: string; variant: "default" | "seco
   rejected: { label: "Rejected", variant: "destructive" },
 };
 
-const AdminDashboard = () => {
+export const AdminDashboard = () => {
   const { isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -50,16 +57,6 @@ const AdminDashboard = () => {
     enabled: isAdmin,
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: isAdmin,
-  });
-
   const { data: users } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
@@ -67,10 +64,22 @@ const AdminDashboard = () => {
       if (pErr) throw pErr;
       const { data: roles, error: rErr } = await supabase.from("user_roles").select("*");
       if (rErr) throw rErr;
-      return profiles.map((p) => ({
-        ...p,
-        roles: roles.filter((r) => r.user_id === p.user_id),
-      }));
+
+      const formattedProfiles = [];
+      for (let i = 0; i < profiles.length; i++) {
+        const p = profiles[i];
+        const userRoles = [];
+        for (let j = 0; j < roles.length; j++) {
+          if (roles[j].user_id === p.user_id) {
+            userRoles.push(roles[j]);
+          }
+        }
+        formattedProfiles.push({
+          ...p,
+          roles: userRoles,
+        });
+      }
+      return formattedProfiles;
     },
     enabled: isAdmin,
   });
@@ -153,17 +162,34 @@ const AdminDashboard = () => {
 
   const counts = {
     total: allAds?.length ?? 0,
-    pending_payment: allAds?.filter((a) => a.status === "pending_payment").length ?? 0,
-    pending_approval: allAds?.filter((a) => a.status === "pending_approval").length ?? 0,
-    approved: allAds?.filter((a) => a.status === "approved").length ?? 0,
-    rejected: allAds?.filter((a) => a.status === "rejected").length ?? 0,
+    pending_payment: 0,
+    pending_approval: 0,
+    approved: 0,
+    rejected: 0,
   };
 
-  const filterAds = (status?: AdStatus) => status ? allAds?.filter((a) => a.status === status) : allAds;
+  if (allAds) {
+    for (const ad of allAds) {
+      if (ad.status in counts) {
+        counts[ad.status as keyof typeof counts]++;
+      }
+    }
+  }
+
+  const filterAds = (status?: AdStatus) => {
+    if (!status || !allAds) return allAds;
+    const filtered = [];
+    for (let i = 0; i < allAds.length; i++) {
+      if (allAds[i].status === status) {
+        filtered.push(allAds[i]);
+      }
+    }
+    return filtered;
+  };
 
   const AdTable = ({ ads }: { ads: typeof allAds }) => (
     <div>
-      {/* Responsive Cards for Mobile */}
+      {/* Mobile Cards */}
       <div className="grid grid-cols-1 gap-4 md:hidden">
         {ads?.map((ad) => (
           <div key={ad.id} className="border rounded-xl p-4 bg-card space-y-3 relative">
@@ -232,7 +258,7 @@ const AdminDashboard = () => {
         )}
       </div>
 
-      {/* Desktop Table Layout */}
+      {/* Desktop Table */}
       <div className="hidden md:block border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -316,7 +342,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="container px-4 py-6 md:py-8 max-w-7xl mx-auto">
-      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg shrink-0">
@@ -324,7 +349,7 @@ const AdminDashboard = () => {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-xs md:text-sm text-muted-foreground">Manage advertisements and users</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Manage advertisements, users, and ad banners</p>
           </div>
         </div>
       </div>
@@ -342,6 +367,9 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="approved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Approved</TabsTrigger>
             <TabsTrigger value="rejected" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Rejected</TabsTrigger>
+            <TabsTrigger value="banners" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
+              <ImageIcon className="h-3.5 w-3.5" /> Banners
+            </TabsTrigger>
             <TabsTrigger value="users" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users ({users?.length ?? 0})
             </TabsTrigger>
@@ -379,8 +407,13 @@ const AdminDashboard = () => {
         <TabsContent value="approved" className="mt-0"><AdTable ads={filterAds("approved")} /></TabsContent>
         <TabsContent value="rejected" className="mt-0"><AdTable ads={filterAds("rejected")} /></TabsContent>
 
+        {/* Ad Banners Tab */}
+        <TabsContent value="banners" className="mt-0 space-y-6">
+          <AdminAdManager />
+        </TabsContent>
+
+        {/* Users Tab */}
         <TabsContent value="users" className="mt-0">
-          {/* Responsive Cards for Mobile */}
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {users?.map((u) => {
               const userIsAdmin = u.roles.some((r) => r.role === "admin");
@@ -422,7 +455,6 @@ const AdminDashboard = () => {
             )}
           </div>
 
-          {/* Desktop Table Layout */}
           <div className="hidden md:block border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -467,9 +499,6 @@ const AdminDashboard = () => {
                       </tr>
                     );
                   })}
-                  {(!users || users.length === 0) && (
-                    <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No users found</td></tr>
-                  )}
                 </tbody>
               </table>
             </div>

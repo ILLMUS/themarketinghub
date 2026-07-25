@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { PopularChips } from "@/components/PopularChips";
 import { AdCard } from "@/components/AdCard";
 import { CategoryCard } from "@/components/CategoryCard";
+import { BannerSlider } from "@/components/BannerSlider";
 import { Button } from "@/components/ui/button";
 import { Search, ArrowRight, TrendingUp, Users, ShoppingBag, FileText, CheckCircle, DollarSign,
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Tag,
   Utensils, Heart, Scissors, Phone, TreePine, Landmark, Truck, Play, Pause } from "lucide-react";
-  import { SearchAutocomplete } from "@/components/SearchAutocomplete";
+import { SearchAutocomplete } from "@/components/SearchAutocomplete";
 
 import heroCollage from "@/assets/hero-collage.png";
 import heroBg from "@/assets/hero-bg.jpg";
@@ -81,24 +82,24 @@ const HomePage = () => {
       return data;
     },
   });
-const { data: activeListingsCount = 0 } = useQuery({
-  queryKey: ["active-listings-count"],
-  queryFn: async () => {
-    const { count, error } = await supabase
-      .from("advertisements")
-      .select("*", {
-        count: "exact",
-        head: true,
-      })
-      .eq("status", "approved")
-      .in("tier", ["e250", "e350", "e500"])
-      .gte("expires_at", new Date().toISOString());
+  const { data: activeListingsCount = 0 } = useQuery({
+    queryKey: ["active-listings-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("advertisements")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq("status", "approved")
+        .in("tier", ["e250", "e350", "e500"])
+        .gte("expires_at", new Date().toISOString());
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return count ?? 0;
-  },
-});
+      return count ?? 0;
+    },
+  });
   const heroSpotlights = spotlightAds ?? [];
   const belowHeroSpotlights: typeof heroSpotlights = [];
   const heroShouldSlide = heroSpotlights.length >= 5;
@@ -126,21 +127,13 @@ const { data: activeListingsCount = 0 } = useQuery({
         }}
       />
 
-
-
       {/* Hero */}
-      <section className="    bg-secondary/60
-              -hero text-primary-foreground overflow-hidden relative isolate">
-
- 
-
-{/* Quick-Access Category Chips */}
-<PopularChips
-    categories={marketplaceCategories}
-/>  
+      <section className="bg-secondary/60 -hero text-primary-foreground overflow-hidden relative isolate">
+        {/* Quick-Access Category Chips */}
+        <PopularChips categories={marketplaceCategories} />  
         <div className="container py-10 md:py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-           
+            
             {/* Right - Image */}
             <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
               {heroSpotlights.length > 0 ? (
@@ -277,6 +270,11 @@ const { data: activeListingsCount = 0 } = useQuery({
         </div>
       </section>
 
+      {/* Dynamic Promotional Banner Slider */}
+      <div className="container mx-auto px-4">
+        <BannerSlider />
+      </div>
+
       {/* E500 Spotlight strip below hero */}
       {belowHeroSpotlights.length > 0 && (
         <section className="border-b bg-gradient-to-b from-accent/5 to-transparent">
@@ -312,8 +310,6 @@ const { data: activeListingsCount = 0 } = useQuery({
         </section>
       )}
 
-
-
       {/* Stats */}
       <section className="border-b">
         <div className="container py-10">
@@ -338,10 +334,6 @@ const { data: activeListingsCount = 0 } = useQuery({
           </div>
         </div>
       </section>
-
-
-
-
 
       {/* E250 Standard - Latest Listings */}
       <section className="container py-16">
