@@ -70,15 +70,25 @@ const LoginPage = () => {
     }
   };
 
-  // 3. Social OAuth Sign In
+  // 3. Social OAuth Sign In (Configured with prompt: "select_account" to force account chooser selection)
   const handleSocialLogin = async (provider: "google" | "github") => {
     setSocialLoading(provider);
     try {
+      const options: any = {
+        redirectTo: `${window.location.origin}/`,
+      };
+
+      // Force Google account chooser dialog to show up every time
+      if (provider === "google") {
+        options.queryParams = {
+          prompt: "select_account",
+          access_type: "offline",
+        };
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
+        options,
       });
 
       if (error) throw error;
@@ -106,7 +116,7 @@ const LoginPage = () => {
               variant="outline"
               disabled={loading || socialLoading !== null}
               onClick={() => handleSocialLogin("google")}
-              className="w-full gap-2"
+              className="w-full gap-2 cursor-pointer"
             >
               {socialLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -138,7 +148,7 @@ const LoginPage = () => {
               variant="outline"
               disabled={loading || socialLoading !== null}
               onClick={() => handleSocialLogin("github")}
-              className="w-full gap-2"
+              className="w-full gap-2 cursor-pointer"
             >
               {socialLoading === "github" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
