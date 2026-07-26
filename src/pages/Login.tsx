@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,15 @@ import * as SeoModule from "@/hooks/useSeo";
 // Guard against SEO import differences
 const Seo = (SeoModule as any).Seo || (SeoModule as any).default || (() => null);
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: Record<string, any>) => string;
+      reset: (widgetId: string) => void;
+    };
+  }
+}
+
 const LoginPage = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -20,6 +29,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Forgot Password Modal State
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -29,12 +39,66 @@ const LoginPage = () => {
   // Social Login Loading States
   const [socialLoading, setSocialLoading] = useState<"google" | "github" | null>(null);
 
-  // 1. Standard Email/Password Sign In
+  // Automatically render the visible Cloudflare Turnstile widget on mount
+  useEffect(() => {
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+
+    const loadWidget = () => {
+      if (window.turnstile) {
+        try {
+          window.turnstile.render("#turnstile-widget-login", {
+            sitekey: siteKey,
+            theme: "auto",
+            callback: (token: string) => {
+              setTurnstileToken(token);
+            },
+            "expired-callback": () => {
+              setTurnstileToken(null);
+            },
+            "error-callback": () => {
+              setTurnstileToken(null);
+            },
+          });
+        } catch (e) {
+          console.error("Turnstile render error:", e);
+        }
+      }
+    };
+
+    if (window.turnstile) {
+      loadWidget();
+    } else {
+      const timer = setInterval(() => {
+        if (window.turnstile) {
+          loadWidget();
+          clearInterval(timer);
+        }
+      }, 200);
+      return () => clearInterval(timer);
+    }
+  }, []);
+
+  // 1. Standard Email/Password Sign In with Turnstile Token
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!turnstileToken) {
+      toast.error("Please complete the security check.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await signIn(email, password);
+      // Pass the captcha token to Supabase Auth options
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          captchaToken: turnstileToken,
+        },
+      });
+
+      if (error) throw error;
+
       toast.success("Welcome back!");
       navigate("/");
     } catch (err: any) {
@@ -70,7 +134,7 @@ const LoginPage = () => {
     }
   };
 
-  // 3. Social OAuth Sign In (Configured with prompt: "select_account" to force account chooser selection)
+  // 3. Social OAuth Sign In
   const handleSocialLogin = async (provider: "google" | "github") => {
     setSocialLoading(provider);
     try {
@@ -78,7 +142,6 @@ const LoginPage = () => {
         redirectTo: `${window.location.origin}/`,
       };
 
-      // Force Google account chooser dialog to show up every time
       if (provider === "google") {
         options.queryParams = {
           prompt: "select_account",
@@ -204,7 +267,12 @@ const LoginPage = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full gradient-primary border-0" disabled={loading}>
+            {/* Turnstile Widget Container for Login */}
+            <div className="py-2 flex justify-center">
+              <div id="turnstile-widget-login" className="min-h-[65px] w-full flex justify-center" />
+            </div>
+
+            <Button type="submit" className="w-full gradient-primary border-0" disabled={loading || !turnstileToken}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In"}
             </Button>
           </form>

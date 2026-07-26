@@ -130,15 +130,18 @@ const HomePage = () => {
         }}
       />
 
-      {/* 🌟 Top Position Banner */}
-      <div className="container mx-auto px-4 pt-4">
-        <AdBanner position="home_top" />
-      </div>
+  
 
       {/* Hero */}
       <section className="bg-secondary/60 -hero text-primary-foreground overflow-hidden relative isolate">
+    {/* 🌟 Top Position Banner */}
+      <div className="container mx-auto px-4 pt-4">
+        <AdBanner position="home_top" />
+      </div>
+      
         {/* Quick-Access Category Chips */}
         <PopularChips categories={marketplaceCategories} />  
+        
         <div className="container py-10 md:py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             
