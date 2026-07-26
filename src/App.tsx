@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
+import { AuthPopup } from "@/components/AuthPopup"; // Import the OLX-style auth popup
 import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import AdDetails from "./pages/AdDetails";
@@ -38,6 +39,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          {/* Global OLX-style timed Google Auth Popup */}
+          <AuthPopup />
+          
           <Layout>
             <Routes>
               {/* Core Application Routes */}

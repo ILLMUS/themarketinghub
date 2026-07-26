@@ -5,8 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { 
   ExternalLink, Tag, MessageSquare, MapPin, Share2, 
-  Send, Check, Copy, ShieldCheck, Info, Calendar, AlertTriangle, Lock, Loader2, X,
-  Maximize2, ArrowLeft, ArrowRight
+  Check, Copy, ShieldCheck, Info, Calendar, AlertTriangle, Lock, Loader2, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +15,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 interface AdBannerProps {
@@ -28,11 +25,8 @@ interface AdBannerProps {
 export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [direction, setDirection] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -81,18 +75,6 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
     ? (currentBanner as any).images 
     : currentBanner.image_url ? [currentBanner.image_url] : [];
 
-  const nextImage = () => {
-    if (!bannerImages.length) return;
-    setDirection(1);
-    setSelectedImage((prev) => (prev === bannerImages.length - 1 ? 0 : prev + 1));
-  };
-
-  const previousImage = () => {
-    if (!bannerImages.length) return;
-    setDirection(-1);
-    setSelectedImage((prev) => (prev === 0 ? bannerImages.length - 1 : prev - 1));
-  };
-
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -114,10 +96,7 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleStartConversation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-
+  const handleDirectMessageClick = async () => {
     if (!user) {
       toast.error("Please sign in to message the advertiser.");
       setIsOpen(false);
@@ -213,28 +192,12 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
         conversationId = newConvo.id;
       }
 
-      const { error: msgError } = await supabase.from("messages").insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        content: message.trim(),
-        read: false,
-      });
-
-      if (msgError) throw msgError;
-
-      await supabase
-        .from("conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
-
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
-
-      setMessage("");
-      toast.success("Message sent successfully!");
+      setIsOpen(false);
+      navigate(`/messages?conversation=${conversationId}`);
     } catch (err: any) {
-      console.error("Error sending message:", err);
-      toast.error(err.message || "Failed to send message. Please try again.");
+      console.error("Error starting conversation:", err);
+      toast.error(err.message || "Failed to open direct message. Please try again.");
     } finally {
       setIsSending(false);
     }
@@ -366,25 +329,11 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
                     className="absolute inset-0 w-full h-full object-cover blur-xl opacity-20 scale-110 pointer-events-none"
                   />
                   
-                  <motion.img
-                    key={selectedImage}
-                    initial={{ opacity: 0.85, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.25 }}
+                  <img
                     src={bannerImages[selectedImage]}
                     alt={currentBanner.title || "Featured Promotion"}
-                    onClick={() => setPreviewOpen(true)}
-                    className="relative z-10 w-full h-full object-contain p-4 cursor-zoom-in transition-transform duration-500 hover:scale-[1.01]"
+                    className="relative z-10 w-full h-full object-contain p-4 transition-transform duration-500"
                   />
-
-                  {/* Mobile & Desktop Safe Positioned Full View Button */}
-                  <button 
-                    onClick={() => setPreviewOpen(true)}
-                    type="button"
-                    className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 text-[10px] sm:text-[11px] font-medium text-white shadow-lg transition-all"
-                  >
-                    <Maximize2 className="h-3 w-3 text-primary" /> Full View
-                  </button>
 
                   {bannerImages.length > 1 && (
                     <span className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] sm:text-[11px] font-bold text-white tracking-wider">
@@ -448,7 +397,7 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid grid-cols-3 w-full mb-4 h-9 sm:h-10 text-xs rounded-xl bg-muted/60 p-1">
                 <TabsTrigger value="overview" className="rounded-lg">Overview</TabsTrigger>
-                <TabsTrigger value="contact" className="rounded-lg">Send Message</TabsTrigger>
+                <TabsTrigger value="contact" className="rounded-lg">Direct Message</TabsTrigger>
                 <TabsTrigger value="location" className="rounded-lg">Map View</TabsTrigger>
               </TabsList>
 
@@ -490,18 +439,18 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
               </TabsContent>
 
               <TabsContent value="contact" className="space-y-4">
-                <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 space-y-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                      <MessageSquare className="h-4 w-4" />
+                <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 space-y-4 text-center">
+                  <div className="flex flex-col items-center gap-2.5">
+                    <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                      <MessageSquare className="h-6 w-6" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-xs sm:text-sm">Secure In-App Chat</h4>
-                      <p className="text-[11px] text-muted-foreground">Start a direct private conversation with the advertiser.</p>
+                      <h4 className="font-bold text-sm sm:text-base">Start Direct Conversation</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">Jump straight into the direct message thread with the advertiser.</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-center gap-3">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-center gap-3 text-left">
                     <img 
                       src={bannerImages[0] || currentBanner.image_url} 
                       alt="" 
@@ -514,30 +463,22 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
                     </div>
                   </div>
 
-                  <form onSubmit={handleStartConversation} className="space-y-3">
-                    <textarea
-                      rows={3}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Hi, is this item still available? I would like to inquire about..."
-                      className="w-full text-xs sm:text-sm p-3.5 rounded-2xl border bg-background focus:ring-2 focus:ring-primary/40 outline-none resize-none shadow-sm"
-                    />
-                    <Button 
-                      type="submit" 
-                      disabled={isSending || !message.trim()}
-                      className="w-full gap-2 gradient-primary border-0 h-11 text-xs sm:text-sm font-semibold shadow-md hover:scale-[1.01] transition-transform"
-                    >
-                      {isSending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" /> Sending Message...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4" /> Send Direct Message
-                        </>
-                      )}
-                    </Button>
-                  </form>
+                  <Button 
+                    type="button" 
+                    onClick={handleDirectMessageClick}
+                    disabled={isSending}
+                    className="w-full gap-2 gradient-primary border-0 h-12 text-xs sm:text-sm font-semibold shadow-md hover:scale-[1.01] transition-transform"
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Opening Chat...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-4 w-4" /> Go to Direct Message
+                      </>
+                    )}
+                  </Button>
                 </div>
 
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-1">
@@ -586,71 +527,6 @@ export const AdBanner = ({ position, className = "" }: AdBannerProps) => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Fullscreen Lightbox Preview Modal */}
-      <AnimatePresence>
-        {previewOpen && bannerImages.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-2"
-            onClick={() => setPreviewOpen(false)}
-          >
-            <button
-              onClick={() => setPreviewOpen(false)}
-              type="button"
-              className="absolute top-5 right-5 text-white hover:text-primary transition z-50 p-2 rounded-full bg-black/50 backdrop-blur-md border border-white/20"
-            >
-              <X size={24} />
-            </button>
-
-            {bannerImages.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); previousImage(); }}
-                type="button"
-                className="absolute left-3 sm:left-6 text-white bg-black/60 backdrop-blur-md rounded-full p-3 hover:bg-primary transition z-50 border border-white/10"
-              >
-                <ArrowLeft size={22} />
-              </button>
-            )}
-
-            <AnimatePresence mode="wait" custom={direction}>
-              <motion.div
-                key={selectedImage}
-                custom={direction}
-                initial={(direction: number) => ({ x: direction > 0 ? 200 : -200, opacity: 0 })}
-                animate={{ x: 0, opacity: 1 }}
-                exit={(direction: number) => ({ x: direction > 0 ? -200 : 200, opacity: 0 })}
-                transition={{ duration: 0.25 }}
-                className="w-full h-full max-w-[95vw] max-h-[85vh] flex items-center justify-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <TransformWrapper>
-                  <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
-                    <img
-                      src={bannerImages[selectedImage]}
-                      alt={currentBanner.title || "Promotion"}
-                      className="max-w-full max-h-[85vh] object-contain rounded-2xl select-none"
-                    />
-                  </TransformComponent>
-                </TransformWrapper>
-              </motion.div>
-            </AnimatePresence>
-
-            {bannerImages.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                type="button"
-                className="absolute right-3 sm:right-6 text-white bg-black/60 backdrop-blur-md rounded-full p-3 hover:bg-primary transition z-50 border border-white/10"
-              >
-                <ArrowRight size={22} />
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 };
