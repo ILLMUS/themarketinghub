@@ -6,6 +6,7 @@ import { AdCard } from "@/components/AdCard";
 import { CategoryCard } from "@/components/CategoryCard";
 import { BannerSlider } from "@/components/BannerSlider";
 import { AdBanner } from "@/components/common/AdBanner";
+import { SidebarBanner } from "@/components/SidebarBanner";
 import { Button } from "@/components/ui/button";
 import { Search, ArrowRight, TrendingUp, Users, ShoppingBag, FileText, CheckCircle, DollarSign,
   Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Tag,
@@ -129,130 +130,34 @@ const HomePage = () => {
           },
         }}
       />
-
-  
-
-      {/* Hero */}
-      <section className="bg-secondary/60 -hero text-primary-foreground overflow-hidden relative isolate">
     {/* 🌟 Top Position Banner */}
       <div className="container mx-auto px-4 pt-4">
         <AdBanner position="home_top" />
       </div>
       
         {/* Quick-Access Category Chips */}
-        <PopularChips categories={marketplaceCategories} />  
-        
+        <PopularChips categories={marketplaceCategories} /> 
+
+
+{/* Hero */}
+      <section className="bg-secondary/60 -hero text-primary-foreground overflow-hidden relative isolate">
         <div className="container py-10 md:py-16 relative">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div className="grid grid-cols-1 gap-1 items-center">
             
             {/* Right - Image */}
-            <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            <div className="animate-fade-in w-full" style={{ animationDelay: "0.2s" }}>
               {heroSpotlights.length > 0 ? (
                 <>
-                  {/* Mobile: swipeable carousel */}
+                  {/* Mobile: Dynamic grid up to 2 columns and 4 rows (max 8 items) */}
                   <div className="md:hidden">
-                    <Carousel
-                      opts={{ loop: true, align: "start" }}
-                      plugins={heroShouldSlide ? [autoplayMobile.current] : []}
-                      className="w-full max-w-sm mx-auto"
-                    >
-                      <CarouselContent className="-ml-3">
-                        {heroSpotlights.map((ad) => (
-                          <CarouselItem key={ad.id} className="pl-3 basis-1/2">
-                            <Link to={`/ad/${ad.id}`} className="group block">
-                              <div className="relative rounded-xl overflow-hidden border border-accent/40 shadow-lg shadow-accent/10 bg-card">
-                                <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
-                                <div className="aspect-[4/3] bg-muted overflow-hidden">
-                                  {ad.images?.[0] ? (
-                                    <img src={ad.images[0]} alt={ad.title} className="w-full h-auto max-h-[650px] object-contain mx-auto" />
-                                  ) : (
-                                    <img src={heroCollage} alt="Marketplace" className="w-full h-auto max-h-[650px] object-contain mx-auto" />
-                                  )}
-                                </div>
-                                <div className="p-2 bg-card text-foreground">
-                                  <h3 className="font-semibold text-xs line-clamp-1">{ad.title}</h3>
-                                  <p className="text-sm font-extrabold text-primary">E{ad.price.toLocaleString()}</p>
-                                </div>
-                              </div>
-                            </Link>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                    </Carousel>
-                    {heroShouldSlide && (
-                      <button
-                        onClick={() => {
-                          if (mobilePlaying) {
-                            autoplayMobile.current.stop();
-                          } else {
-                            autoplayMobile.current.play();
-                          }
-                          setMobilePlaying(!mobilePlaying);
-                        }}
-                        className="mx-auto mt-3 flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1.5 text-xs font-medium text-primary-foreground/80 backdrop-blur-sm hover:bg-primary/30 transition-colors"
-                        aria-label={mobilePlaying ? "Pause carousel" : "Play carousel"}
-                      >
-                        {mobilePlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-                        {mobilePlaying ? "Pause" : "Play"}
-                      </button>
-                    )}
-                  </div>
-                  {/* Desktop: 2x2 grid (or sliding carousel when 4+ ads) */}
-                  {heroShouldSlide ? (
-                    <div className="hidden md:block w-full max-w-xl mx-auto">
-                      <Carousel
-                        opts={{ loop: true, align: "start" }}
-                        plugins={[autoplayDesktop.current]}
-                        className="w-full"
-                      >
-                        <CarouselContent className="-ml-3">
-                          {heroSpotlights.map((ad) => (
-                            <CarouselItem key={ad.id} className="pl-3 basis-1/4">
-                              <Link to={`/ad/${ad.id}`} className="group block">
-                                <div className="relative rounded-xl overflow-hidden border border-accent/40 shadow-lg shadow-accent/10 bg-card">
-                                  <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
-                                  <div className="aspect-[4/3] bg-muted overflow-hidden">
-                                    {ad.images?.[0] ? (
-                                      <img src={ad.images[0]} alt={ad.title} className="w-full h-auto max-h-[650px] object-contain mx-auto group-hover:scale-105 transition-transform duration-500" />
-                                    ) : (
-                                      <img src={heroCollage} alt="Marketplace" className="w-full h-auto max-h-[650px] object-contain mx-auto" />
-                                    )}
-                                  </div>
-                                  <div className="p-2 bg-card text-foreground">
-                                    <h3 className="font-semibold text-xs line-clamp-1">{ad.title}</h3>
-                                    <p className="text-sm font-extrabold text-primary">E{ad.price.toLocaleString()}</p>
-                                  </div>
-                                </div>
-                              </Link>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                      </Carousel>
-                      <button
-                        onClick={() => {
-                          if (desktopPlaying) {
-                            autoplayDesktop.current.stop();
-                          } else {
-                            autoplayDesktop.current.play();
-                          }
-                          setDesktopPlaying(!desktopPlaying);
-                        }}
-                        className="mx-auto mt-3 flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1.5 text-xs font-medium text-primary-foreground/80 backdrop-blur-sm hover:bg-primary/30 transition-colors"
-                        aria-label={desktopPlaying ? "Pause carousel" : "Play carousel"}
-                      >
-                        {desktopPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-                        {desktopPlaying ? "Pause" : "Play"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="hidden md:grid grid-cols-2 gap-3 w-full max-w-xl mx-auto">
-                      {heroSpotlights.slice(0, 4).map((ad) => (
-                        <Link key={ad.id} to={`/ad/${ad.id}`} className="group">
-                          <div className="relative rounded-xl overflow-hidden border border-accent/40 shadow-lg shadow-accent/10 bg-card">
-                            <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">★</div>
-                            <div className="aspect-[4/3] bg-muted overflow-hidden">
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                      {heroSpotlights.slice(0, 8).map((ad) => (
+                        <Link key={ad.id} to={`/ad/${ad.id}`} className="group block">
+                          <div className="relative rounded-none overflow-hidden border border-accent/40 shadow-lg shadow-accent/10 bg-card">
+                            <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-none">★</div>
+                            <div className="aspect-[4/3] bg-muted overflow-hidden flex items-center justify-center">
                               {ad.images?.[0] ? (
-                                <img src={ad.images[0]} alt={ad.title} className="w-full h-full max-h-[650px] object-contain mx-auto group-hover:scale-105 transition-transform duration-500" />
+                                <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-contain mx-auto" />
                               ) : (
                                 <img src={heroCollage} alt="Marketplace" className="w-full h-full object-cover" />
                               )}
@@ -265,7 +170,29 @@ const HomePage = () => {
                         </Link>
                       ))}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Desktop: Dynamic grid up to 5 columns and 4 rows (max 20 items) */}
+                  <div className="hidden md:grid grid-cols-5 gap-3 w-full">
+                    {heroSpotlights.slice(0, 20).map((ad) => (
+                      <Link key={ad.id} to={`/ad/${ad.id}`} className="group block">
+                        <div className="relative rounded-none overflow-hidden border border-accent/40 shadow-lg shadow-accent/10 bg-card">
+                          <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-none">★</div>
+                          <div className="aspect-[4/3] bg-muted overflow-hidden flex items-center justify-center">
+                            {ad.images?.[0] ? (
+                              <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-contain mx-auto group-hover:scale-105 transition-transform duration-500" />
+                            ) : (
+                              <img src={heroCollage} alt="Marketplace" className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <div className="p-2 bg-card text-foreground">
+                            <h3 className="font-semibold text-xs line-clamp-1">{ad.title}</h3>
+                            <p className="text-sm font-extrabold text-primary">E{ad.price.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </>
               ) : (
                 <img
@@ -287,21 +214,22 @@ const HomePage = () => {
       </div>
 
       {/* E500 Spotlight strip below hero */}
-      {belowHeroSpotlights.length > 0 && (
-        <section className="border-b bg-gradient-to-b from-accent/5 to-transparent">
-          <div className="container py-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-accent">★ Spotlight</span>
-                <h2 className="text-2xl md:text-3xl font-bold">Premium Listings</h2>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {belowHeroSpotlights.map((ad) => <AdCard key={ad.id} ad={ad} />)}
+      <section className="border-b bg-gradient-to-b from-accent/5 to-transparent">
+        <div className="container py-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-accent">★ Spotlight</span>
+              <h2 className="text-2xl md:text-3xl font-bold">Premium Listings</h2>
             </div>
           </div>
-        </section>
-      )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-5">
+            <div className="w-full h-full flex flex-col">
+              <SidebarBanner />
+            </div>
+            {belowHeroSpotlights.map((ad) => <AdCard key={ad.id} ad={ad} />)}
+          </div>
+        </div>
+      </section>
 
       {/* E350 Boosted - right below hero */}
       {boostedAds && boostedAds.length > 0 && (
@@ -367,11 +295,11 @@ const HomePage = () => {
             {standardAds.map((ad) => <AdCard key={ad.id} ad={ad} />)}
           </div>
         ) : (
-          <div className="text-center py-16 bg-secondary/30 rounded-xl">
+          <div className="text-center py-16 bg-secondary/30 rounded-none">
             <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No listings yet</h3>
             <p className="text-muted-foreground mb-4">Be the first to post an advertisement!</p>
-            <Button asChild className="gradient-primary border-0">
+            <Button asChild className="gradient-primary border-0 rounded-none">
               <Link to="/post-ad">Post Your Ad</Link>
             </Button>
           </div>
@@ -390,7 +318,7 @@ const HomePage = () => {
           <p className="mb-6 opacity-90 max-w-md mx-auto">
             Join hundreds of businesses advertising on The Market Hub. Reach customers across Eswatini.
           </p>
-          <Button size="lg" asChild className="gradient-accent border-0 text-base">
+          <Button size="lg" asChild className="gradient-accent border-0 text-base rounded-none">
             <Link to="/post-ad">Post Your Advertisement <ArrowRight className="ml-2 h-4 w-4" /></Link>
           </Button>
         </div>
