@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AdCard } from "@/components/AdCard";
+import { CategoryBanner } from "@/components/CategoryBanner";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, SlidersHorizontal } from "lucide-react";
@@ -142,11 +143,14 @@ const MarketplacePage = () => {
         />
       )}
       
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">
           {activeCategory ? `${activeCategory.name}${locationLabel}` : "Marketplace"}
         </h1>
       </div>
+
+      {/* Category Top Banner */}
+      <CategoryBanner categorySlug={activeCategory?.slug} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         {/* Search Bar */}
@@ -173,7 +177,7 @@ const MarketplacePage = () => {
           </SelectContent>
         </Select>
 
-        {/* Dynamic Subcategory Filter (Shows when Category is Selected and Subcategories Exist) */}
+        {/* Dynamic Subcategory Filter */}
         {subcategories && subcategories.length > 0 ? (
           <Select value={selectedSubcategory} onValueChange={handleSubcategoryChange}>
             <SelectTrigger className="w-full">

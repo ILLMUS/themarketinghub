@@ -4,8 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Plus, ExternalLink, Power } from "lucide-react";
+import { Trash2, Plus, ExternalLink, Power, Link as LinkIcon } from "lucide-react";
 
 export interface AdBanner {
   id: string;
@@ -13,18 +20,26 @@ export interface AdBanner {
   image_url: string;
   target_url?: string | null;
   position?: string | null;
+  category_id?: string | null;
+  sub_category?: string | null;
+  location?: string | null;
   is_active: boolean;
   created_at?: string;
 }
 
 export const AdminAdManager = () => {
   const queryClient = useQueryClient();
+  
+  // Form State
   const [title, setTitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
   const [position, setPosition] = useState("home_top");
+  const [categoryId, setCategoryId] = useState("");
+  const [subCategory, setSubCategory] = useState("");
+  const [location, setLocation] = useState("");
 
-  // Fetch Banners safely with fallback (pointing to the correct "banners" table)
+  // Fetch Banners
   const { data: banners = [], isLoading, error } = useQuery<AdBanner[]>({
     queryKey: ["admin-ad-banners"],
     queryFn: async () => {
@@ -41,6 +56,16 @@ export const AdminAdManager = () => {
     },
   });
 
+  // Fetch Categories for the dropdown selection
+  const { data: categoriesList = [] } = useQuery({
+    queryKey: ["admin-categories-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("*");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const createBanner = useMutation({
     mutationFn: async () => {
       if (!title.trim() || !imageUrl.trim()) {
@@ -52,6 +77,9 @@ export const AdminAdManager = () => {
           image_url: imageUrl.trim(),
           target_url: targetUrl.trim() || null,
           position: position || "home_top",
+          category_id: categoryId || null,
+          sub_category: subCategory.trim() || null,
+          location: location.trim() || null,
           is_active: true,
         },
       ]);
@@ -59,12 +87,16 @@ export const AdminAdManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-ad-banners"] });
+      // Reset Form Fields
       setTitle("");
       setImageUrl("");
       setTargetUrl("");
-      toast.success("Ad banner created successfully");
+      setCategoryId("");
+      setSubCategory("");
+      setLocation("");
+      toast.success("Ad/Product posted and linked successfully!");
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to create banner"),
+    onError: (err: Error) => toast.error(err.message || "Failed to create post"),
   });
 
   const toggleActive = useMutation({
@@ -96,20 +128,24 @@ export const AdminAdManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* Create Banner Form */}
+      {/* Create Banner / Ad Form */}
       <div className="border rounded-xl p-4 md:p-6 bg-card space-y-4 shadow-sm">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Plus className="h-5 w-5 text-primary" /> Create New Ad Banner
+          <Plus className="h-5 w-5 text-primary" /> Create New Ad / Product Listing
         </h3>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Name / Title */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Banner Title *</label>
+            <label className="text-xs font-medium text-muted-foreground">Name / Title *</label>
             <Input
-              placeholder="e.g. Summer Promo Banner"
+              placeholder="e.g. iPhone 15 Pro Max / Summer Promo"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
+
+          {/* Image URL */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Image URL *</label>
             <Input
@@ -118,14 +154,45 @@ export const AdminAdManager = () => {
               onChange={(e) => setImageUrl(e.target.value)}
             />
           </div>
+
+          {/* Category Dropdown */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Client Target Link (Website, Facebook, or Product)</label>
+            <label className="text-xs font-medium text-muted-foreground">Category</label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categoriesList.map((cat: any) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sub-category */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Sub-category</label>
             <Input
-              placeholder="https://example.com or marketplace link"
-              value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
+              placeholder="e.g. Smartphones, Laptops"
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
             />
           </div>
+
+          {/* Location */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Location</label>
+            <Input
+              placeholder="e.g. Mbabane, Manzini"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          {/* Placement Position */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Placement Position</label>
             <Input
@@ -135,12 +202,25 @@ export const AdminAdManager = () => {
             />
           </div>
         </div>
+
+        {/* Product Page Link */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <LinkIcon className="h-3 w-3" /> Link to Product Page / Target URL
+          </label>
+          <Input
+            placeholder="https://example.com/product/123"
+            value={targetUrl}
+            onChange={(e) => setTargetUrl(e.target.value)}
+          />
+        </div>
+
         <Button
           onClick={() => createBanner.mutate()}
           disabled={createBanner.isPending || !title || !imageUrl}
           className="w-full sm:w-auto"
         >
-          {createBanner.isPending ? "Adding..." : "Add Banner"}
+          {createBanner.isPending ? "Posting..." : "Post Listing & Link Category"}
         </Button>
       </div>
 
@@ -168,6 +248,13 @@ export const AdminAdManager = () => {
                       {banner.is_active ? "Active" : "Disabled"}
                     </Badge>
                   </div>
+
+                  {/* Sub-details tags */}
+                  <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+                    {banner.sub_category && <Badge variant="secondary" className="text-[10px]">{banner.sub_category}</Badge>}
+                    {banner.location && <Badge variant="outline" className="text-[10px]">📍 {banner.location}</Badge>}
+                  </div>
+
                   {banner.image_url && (
                     <div className="relative aspect-[3/1] bg-muted rounded-lg overflow-hidden border">
                       <img

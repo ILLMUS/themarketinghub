@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { marketplaceCategories } from "@/data/marketplaceCategories";
 import { Seo } from "@/hooks/useSeo";
+import { CategoryBanner } from "@/components/CategoryBanner"; // Adjust import path if needed
 
 const CategoriesPage = () => {
   return (
-    <div className="container py-8">
+    <div className="container py-8 max-w-7xl mx-auto">
       <Seo
         title="All Categories – Browse Listings in Eswatini | Market Hub"
         description="Explore every category on Market Hub: vehicles, property, electronics, jobs, services and more. Find what you need across Eswatini."
@@ -21,6 +22,9 @@ const CategoriesPage = () => {
           })),
         }}
       />
+
+      {/* Category Top Banner powered by Admin Ad Manager */}
+      <CategoryBanner />
 
       <h1 className="text-3xl font-bold mb-2">Categories</h1>
 
