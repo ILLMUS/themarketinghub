@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, Plus, Image as ImageIcon, ExternalLink, Power } from "lucide-react";
+import { Trash2, Plus, ExternalLink, Power } from "lucide-react";
 
 export interface AdBanner {
   id: string;
@@ -22,20 +22,19 @@ export const AdminAdManager = () => {
   const [title, setTitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
-  const [position, setPosition] = useState("home_banner");
+  const [position, setPosition] = useState("home_top");
 
-  // Fetch Banners safely with fallback
+  // Fetch Banners safely with fallback (pointing to the correct "banners" table)
   const { data: banners = [], isLoading, error } = useQuery<AdBanner[]>({
     queryKey: ["admin-ad-banners"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("ad_banners")
+        .from("banners")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) {
-        // Fallback gracefully if table doesn't exist yet
-        console.warn("Could not fetch ad_banners:", error.message);
+        console.warn("Could not fetch banners:", error.message);
         return [];
       }
       return data || [];
@@ -47,12 +46,12 @@ export const AdminAdManager = () => {
       if (!title.trim() || !imageUrl.trim()) {
         throw new Error("Title and Image URL are required");
       }
-      const { error } = await supabase.from("ad_banners").insert([
+      const { error } = await supabase.from("banners").insert([
         {
           title: title.trim(),
           image_url: imageUrl.trim(),
           target_url: targetUrl.trim() || null,
-          position: position || "home_banner",
+          position: position || "home_top",
           is_active: true,
         },
       ]);
@@ -71,7 +70,7 @@ export const AdminAdManager = () => {
   const toggleActive = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
-        .from("ad_banners")
+        .from("banners")
         .update({ is_active })
         .eq("id", id);
       if (error) throw error;
@@ -85,7 +84,7 @@ export const AdminAdManager = () => {
 
   const deleteBanner = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("ad_banners").delete().eq("id", id);
+      const { error } = await supabase.from("banners").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -120,9 +119,9 @@ export const AdminAdManager = () => {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Target URL (Optional Link)</label>
+            <label className="text-xs font-medium text-muted-foreground">Client Target Link (Website, Facebook, or Product)</label>
             <Input
-              placeholder="https://example.com/promo"
+              placeholder="https://example.com or marketplace link"
               value={targetUrl}
               onChange={(e) => setTargetUrl(e.target.value)}
             />
@@ -130,7 +129,7 @@ export const AdminAdManager = () => {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Placement Position</label>
             <Input
-              placeholder="home_banner"
+              placeholder="home_top"
               value={position}
               onChange={(e) => setPosition(e.target.value)}
             />
@@ -187,7 +186,7 @@ export const AdminAdManager = () => {
                   <span className="truncate">Pos: <code className="bg-muted px-1 py-0.5 rounded text-foreground">{banner.position || "default"}</code></span>
                   <div className="flex items-center gap-1">
                     {banner.target_url && (
-                      <a href={banner.target_url} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-muted rounded text-foreground">
+                      <a href={banner.target_url} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-muted rounded text-foreground" title="Test Link">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     )}
@@ -198,7 +197,7 @@ export const AdminAdManager = () => {
                       onClick={() => toggleActive.mutate({ id: banner.id, is_active: !banner.is_active })}
                       title="Toggle Active"
                     >
-                      <Power className={`h-4 w-4 ${banner.is_active ? "text-success" : "text-muted-foreground"}`} />
+                      <Power className={`h-4 w-4 ${banner.is_active ? "text-emerald-500" : "text-muted-foreground"}`} />
                     </Button>
                     <Button
                       size="sm"

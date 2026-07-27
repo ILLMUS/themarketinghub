@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Shield, UserCheck, Image as ImageIcon, Upload, Link as LinkIcon
+  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Shield, UserCheck, Image as ImageIcon, Upload, Link as LinkIcon, Pencil, X, Check
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -29,7 +29,7 @@ const statusConfig: Record<AdStatus, { label: string; variant: "default" | "seco
   rejected: { label: "Rejected", variant: "destructive" },
 };
 
-// --- Banner Manager Component ---
+// --- Editable Banner Manager Component ---
 const AdminAdManager = () => {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
@@ -38,6 +38,14 @@ const AdminAdManager = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Edit State Management
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editLinkUrl, setEditLinkUrl] = useState("");
+  const [editPosition, setEditPosition] = useState("");
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null);
 
   // Fetch active banners list
   const { data: banners, isLoading: loadingBanners } = useQuery({
@@ -57,6 +65,14 @@ const AdminAdManager = () => {
     }
   };
 
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setEditFile(file);
+      setEditPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const handleUploadBanner = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
@@ -70,7 +86,6 @@ const AdminAdManager = () => {
       const fileName = `banner-${Date.now()}.${fileExt}`;
       const filePath = `banners/${fileName}`;
 
-      // 1. Upload file to Supabase storage bucket
       const { error: uploadError } = await supabase.storage
         .from("banners")
         .upload(filePath, selectedFile);
@@ -80,7 +95,6 @@ const AdminAdManager = () => {
       const { data: publicUrlData } = supabase.storage.from("banners").getPublicUrl(filePath);
       const imageUrl = publicUrlData.publicUrl;
 
-      // 2. Insert banner record into database table
       const { error: dbError } = await supabase.from("banners").insert({
         title,
         image_url: imageUrl,
@@ -94,13 +108,72 @@ const AdminAdManager = () => {
       toast.success("Banner published and active!");
       queryClient.invalidateQueries({ queryKey: ["admin-banners"] });
 
-      // Reset
       setTitle("");
       setLinkUrl("");
       setSelectedFile(null);
       setPreviewUrl(null);
     } catch (err: any) {
       toast.error(err.message || "Failed to upload banner");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const startEditing = (banner: any) => {
+    setEditingId(banner.id);
+    setEditTitle(banner.title || "");
+    setEditLinkUrl(banner.target_url || "");
+    setEditPosition(banner.position || "home_top");
+    setEditFile(null);
+    setEditPreviewUrl(banner.image_url);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditTitle("");
+    setEditLinkUrl("");
+    setEditPosition("");
+    setEditFile(null);
+    setEditPreviewUrl(null);
+  };
+
+  const saveEditBanner = async (id: string, existingImageUrl: string) => {
+    setIsUploading(true);
+    try {
+      let imageUrl = existingImageUrl;
+
+      if (editFile) {
+        const fileExt = editFile.name.split('.').pop();
+        const fileName = `banner-${Date.now()}.${fileExt}`;
+        const filePath = `banners/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("banners")
+          .upload(filePath, editFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage.from("banners").getPublicUrl(filePath);
+        imageUrl = publicUrlData.publicUrl;
+      }
+
+      const { error: dbError } = await supabase
+        .from("banners")
+        .update({
+          title: editTitle,
+          image_url: imageUrl,
+          target_url: editLinkUrl || "#",
+          position: editPosition,
+        })
+        .eq("id", id);
+
+      if (dbError) throw dbError;
+
+      toast.success("Banner updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["admin-banners"] });
+      cancelEditing();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update banner");
     } finally {
       setIsUploading(false);
     }
@@ -221,22 +294,98 @@ const AdminAdManager = () => {
           <p className="text-xs text-muted-foreground">Loading active banners...</p>
         ) : banners && banners.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {banners.map((banner: any) => (
-              <div key={banner.id} className="border rounded-lg p-3 relative space-y-2 bg-muted/10">
-                <div className="aspect-[3/1] overflow-hidden rounded-md border bg-muted">
-                  <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+            {banners.map((banner: any) => {
+              const isEditing = editingId === banner.id;
+
+              return (
+                <div key={banner.id} className="border rounded-lg p-3 relative space-y-3 bg-muted/10">
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-foreground">Edit Title</label>
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full h-8 px-2 rounded border border-input bg-background text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-foreground">Edit Position</label>
+                        <Select value={editPosition} onValueChange={setEditPosition}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="home_top">Home Page (Top Banner)</SelectItem>
+                            <SelectItem value="home_middle">Home Page (Middle Promo)</SelectItem>
+                            <SelectItem value="sidebar">Sidebar Banner</SelectItem>
+                            <SelectItem value="category_header">Category Top Banner</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-foreground">Destination Link</label>
+                        <input
+                          type="url"
+                          value={editLinkUrl}
+                          onChange={(e) => setEditLinkUrl(e.target.value)}
+                          className="w-full h-8 px-2 rounded border border-input bg-background text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-foreground">Banner Image (Replace)</label>
+                        <div className="border border-dashed rounded p-2 text-center bg-background relative cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleEditFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                          {editPreviewUrl ? (
+                            <img src={editPreviewUrl} alt="Edit Preview" className="h-20 mx-auto object-cover rounded" />
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground">Click to change image</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-1">
+                        <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={cancelEditing}>
+                          <X className="h-3 w-3 mr-1" /> Cancel
+                        </Button>
+                        <Button size="sm" className="h-7 text-xs px-2" onClick={() => saveEditBanner(banner.id, banner.image_url)} disabled={isUploading}>
+                          <Check className="h-3 w-3 mr-1" /> {isUploading ? "Saving..." : "Save"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="aspect-[3/1] overflow-hidden rounded-md border bg-muted">
+                        <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-xs line-clamp-1">{banner.title}</p>
+                          <Badge variant="outline" className="text-[10px] mt-0.5">{banner.position}</Badge>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => startEditing(banner)} title="Edit Banner">
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => deleteBanner(banner.id)} title="Delete Banner">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-xs line-clamp-1">{banner.title}</p>
-                    <Badge variant="outline" className="text-[10px] mt-0.5">{banner.position}</Badge>
-                  </div>
-                  <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => deleteBanner(banner.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-xs text-muted-foreground text-center py-6">No custom banners currently uploaded.</p>
@@ -668,8 +817,8 @@ export const AdminDashboard = () => {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left p-3 font-medium">Name</th>
-                    <th className="text-left p-3 font-medium">Joined</th>
+                    <th className="text-left p-3 font-medium">User Name</th>
+                    <th className="text-left p-3 font-medium">Joined Date</th>
                     <th className="text-left p-3 font-medium">Role</th>
                     <th className="text-right p-3 font-medium">Actions</th>
                   </tr>
@@ -680,33 +829,31 @@ export const AdminDashboard = () => {
                     return (
                       <tr key={u.id} className="border-t hover:bg-muted/30">
                         <td className="p-3 font-medium">{u.name}</td>
-                        <td className="p-3 text-muted-foreground">
-                          {new Date(u.created_at).toLocaleDateString()}
-                        </td>
+                        <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</td>
                         <td className="p-3">
-                          <Badge variant={userIsAdmin ? "default" : "secondary"}>
-                            {userIsAdmin ? (
-                              <><Shield className="h-3 w-3 mr-1" /> Admin</>
-                            ) : (
-                              <><UserCheck className="h-3 w-3 mr-1" /> User</>
-                            )}
+                          <Badge variant={userIsAdmin ? "default" : "secondary"} className="text-[10px]">
+                            {userIsAdmin ? <><Shield className="h-3 w-3 mr-1" /> Admin</> : <><UserCheck className="h-3 w-3 mr-1" /> User</>}
                           </Badge>
                         </td>
                         <td className="p-3 text-right">
                           <Button
                             size="sm"
                             variant={userIsAdmin ? "destructive" : "outline"}
+                            className="text-xs h-8"
                             onClick={() => {
                               if (userIsAdmin && !confirm("Remove admin role from this user?")) return;
                               toggleRole.mutate({ userId: u.user_id, isCurrentlyAdmin: userIsAdmin });
                             }}
                           >
-                            {userIsAdmin ? "Remove Admin" : "Make Admin"}
+                            {userIsAdmin ? "Remove Admin" : "Promote to Admin"}
                           </Button>
                         </td>
                       </tr>
                     );
                   })}
+                  {(!users || users.length === 0) && (
+                    <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No users found</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -716,5 +863,4 @@ export const AdminDashboard = () => {
     </div>
   );
 };
-
 export default AdminDashboard;
