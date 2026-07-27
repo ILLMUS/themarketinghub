@@ -6,13 +6,26 @@ import { AdCard } from "@/components/AdCard";
 import { CategoryBanner } from "@/components/CategoryBanner";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, ExternalLink } from "lucide-react";
 import * as SeoModule from "@/hooks/useSeo";
 
 // Safe fallback for Seo hook/component
 const Seo = (SeoModule as any).Seo || (SeoModule as any).default || (() => null);
 
 const LOCATIONS = ["All Locations", "Mbabane", "Manzini", "Siteki", "Big Bend", "Nhlangano", "Matsapha", "Piggs Peak"];
+
+export interface AdBanner {
+  id: string;
+  title: string;
+  image_url: string;
+  target_url?: string | null;
+  position?: string | null;
+  category_id?: string | null;
+  sub_category?: string | null;
+  location?: string | null;
+  is_active: boolean;
+  banner_text?: string | null;
+}
 
 const MarketplacePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,7 +87,31 @@ const MarketplacePage = () => {
     if (subcategoryParam) setSelectedSubcategory(subcategoryParam);
   }, [categoryParam, subcategoryParam, categories]);
 
-  // 3. Fetch active listings from Supabase
+  // 3. Fetch active banners matching the selected category directly
+  const { data: categoryBanners = [] } = useQuery<AdBanner[]>({
+    queryKey: ["category-matched-banners", selectedCategory],
+    queryFn: async () => {
+      let query = supabase
+        .from("banners")
+        .select("*")
+        .eq("is_active", true);
+
+      if (selectedCategory && selectedCategory !== "all") {
+        query = query.eq("category_id", selectedCategory);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+
+      if (error) {
+        console.warn("Could not fetch category banners:", error.message);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!categories,
+  });
+
+  // 4. Fetch active listings from Supabase
   const { data: ads, isLoading } = useQuery({
     queryKey: ["marketplace-ads", search, selectedCategory, selectedSubcategory, selectedLocation],
     queryFn: async () => {
@@ -151,6 +188,58 @@ const MarketplacePage = () => {
 
       {/* Category Top Banner */}
       <CategoryBanner categorySlug={activeCategory?.slug} />
+
+      {/* Directly Display Category-Associated Banners (No border radius, text overlay support) */}
+      {categoryBanners.length > 0 && (
+        <div className="mb-8 space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {categoryBanners.map((banner) => {
+              const content = (
+                <div className="relative w-full aspect-[4/1] md:aspect-[5/1] bg-muted border rounded-none overflow-hidden group">
+                  {banner.image_url && (
+                    <img
+                      src={banner.image_url}
+                      alt={banner.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  )}
+                  {banner.banner_text && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-4">
+                      <span className="text-white font-extrabold text-base md:text-2xl text-center tracking-wide drop-shadow-md">
+                        {banner.banner_text}
+                      </span>
+                    </div>
+                  )}
+                  {banner.target_url && (
+                    <div className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+              );
+
+              return banner.target_url ? (
+                <a
+                  key={banner.id}
+                  href={banner.target_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-none focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {content}
+                </a>
+              ) : (
+                <div key={banner.id} className="rounded-none">
+                  {content}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         {/* Search Bar */}
