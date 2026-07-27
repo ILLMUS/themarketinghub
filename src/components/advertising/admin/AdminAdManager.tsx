@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Plus, ExternalLink, Power, Link as LinkIcon } from "lucide-react";
+import { Trash2, Plus, ExternalLink, Power, Link as LinkIcon, FolderTree } from "lucide-react";
 
 export interface AdBanner {
   id: string;
@@ -94,7 +94,7 @@ export const AdminAdManager = () => {
       setCategoryId("");
       setSubCategory("");
       setLocation("");
-      toast.success("Ad/Product posted and linked successfully!");
+      toast.success("Ad/Product posted and assigned to category successfully!");
     },
     onError: (err: Error) => toast.error(err.message || "Failed to create post"),
   });
@@ -126,6 +126,13 @@ export const AdminAdManager = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  // Helper to find category name for display cards
+  const getCategoryName = (catId?: string | null) => {
+    if (!catId) return null;
+    const found = categoriesList.find((c: any) => c.id === catId);
+    return found ? found.name : null;
+  };
+
   return (
     <div className="space-y-6">
       {/* Create Banner / Ad Form */}
@@ -155,12 +162,14 @@ export const AdminAdManager = () => {
             />
           </div>
 
-          {/* Category Dropdown */}
+          {/* Category Dropdown (Direct Database Association) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Category</label>
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <FolderTree className="h-3 w-3" /> Target Category *
+            </label>
             <Select value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a Category" />
+                <SelectValue placeholder="Select Banner Category" />
               </SelectTrigger>
               <SelectContent>
                 {categoriesList.map((cat: any) => (
@@ -217,10 +226,10 @@ export const AdminAdManager = () => {
 
         <Button
           onClick={() => createBanner.mutate()}
-          disabled={createBanner.isPending || !title || !imageUrl}
+          disabled={createBanner.isPending || !title || !imageUrl || !categoryId}
           className="w-full sm:w-auto"
         >
-          {createBanner.isPending ? "Posting..." : "Post Listing & Link Category"}
+          {createBanner.isPending ? "Posting..." : "Post Listing & Assign Category"}
         </Button>
       </div>
 
@@ -239,68 +248,72 @@ export const AdminAdManager = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {banners.map((banner) => (
-              <div key={banner.id} className="border rounded-xl p-4 bg-card space-y-3 relative flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-semibold text-sm line-clamp-1">{banner.title}</h4>
-                    <Badge variant={banner.is_active ? "default" : "outline"} className="shrink-0 text-[10px]">
-                      {banner.is_active ? "Active" : "Disabled"}
-                    </Badge>
-                  </div>
-
-                  {/* Sub-details tags */}
-                  <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
-                    {banner.sub_category && <Badge variant="secondary" className="text-[10px]">{banner.sub_category}</Badge>}
-                    {banner.location && <Badge variant="outline" className="text-[10px]">📍 {banner.location}</Badge>}
-                  </div>
-
-                  {banner.image_url && (
-                    <div className="relative aspect-[3/1] bg-muted rounded-lg overflow-hidden border">
-                      <img
-                        src={banner.image_url}
-                        alt={banner.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
+            {banners.map((banner) => {
+              const catName = getCategoryName(banner.category_id);
+              return (
+                <div key={banner.id} className="border rounded-xl p-4 bg-card space-y-3 relative flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-semibold text-sm line-clamp-1">{banner.title}</h4>
+                      <Badge variant={banner.is_active ? "default" : "outline"} className="shrink-0 text-[10px]">
+                        {banner.is_active ? "Active" : "Disabled"}
+                      </Badge>
                     </div>
-                  )}
-                </div>
 
-                <div className="pt-2 border-t flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="truncate">Pos: <code className="bg-muted px-1 py-0.5 rounded text-foreground">{banner.position || "default"}</code></span>
-                  <div className="flex items-center gap-1">
-                    {banner.target_url && (
-                      <a href={banner.target_url} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-muted rounded text-foreground" title="Test Link">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
+                    {/* Category & Sub-details tags */}
+                    <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+                      {catName && <Badge variant="default" className="text-[10px] bg-primary/10 text-primary border-primary/20">📂 {catName}</Badge>}
+                      {banner.sub_category && <Badge variant="secondary" className="text-[10px]">{banner.sub_category}</Badge>}
+                      {banner.location && <Badge variant="outline" className="text-[10px]">📍 {banner.location}</Badge>}
+                    </div>
+
+                    {banner.image_url && (
+                      <div className="relative aspect-[3/1] bg-muted rounded-lg overflow-hidden border">
+                        <img
+                          src={banner.image_url}
+                          alt={banner.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                      onClick={() => toggleActive.mutate({ id: banner.id, is_active: !banner.is_active })}
-                      title="Toggle Active"
-                    >
-                      <Power className={`h-4 w-4 ${banner.is_active ? "text-emerald-500" : "text-muted-foreground"}`} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0 text-destructive"
-                      onClick={() => {
-                        if (confirm("Delete this banner?")) deleteBanner.mutate(banner.id);
-                      }}
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  </div>
+
+                  <div className="pt-2 border-t flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="truncate">Pos: <code className="bg-muted px-1 py-0.5 rounded text-foreground">{banner.position || "default"}</code></span>
+                    <div className="flex items-center gap-1">
+                      {banner.target_url && (
+                        <a href={banner.target_url} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-muted rounded text-foreground" title="Test Link">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => toggleActive.mutate({ id: banner.id, is_active: !banner.is_active })}
+                        title="Toggle Active"
+                      >
+                        <Power className={`h-4 w-4 ${banner.is_active ? "text-emerald-500" : "text-muted-foreground"}`} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-destructive"
+                        onClick={() => {
+                          if (confirm("Delete this banner?")) deleteBanner.mutate(banner.id);
+                        }}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
