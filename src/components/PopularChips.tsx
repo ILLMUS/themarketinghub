@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Store, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Store, ChevronLeft, ChevronRight, Hand } from "lucide-react";
 import { marketplaceCategories } from "@/data/marketplaceCategories";
 
 interface Category {
@@ -24,6 +24,7 @@ export function PopularChips({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [isSwiping, setIsSwiping] = useState(false);
 
   const hoveredCategory = marketplaceCategories.find(
     (category) => category.id === activeCategory
@@ -46,6 +47,25 @@ export function PopularChips({
     return () => el?.removeEventListener("scroll", checkScroll);
   }, [chips]);
 
+  // Trigger simulated swipe animation 2 seconds after mount, then every 10 seconds
+  useEffect(() => {
+    const triggerSwipe = () => {
+      setIsSwiping(true);
+      const timer = setTimeout(() => {
+        setIsSwiping(false);
+      }, 15500);
+      return timer;
+    };
+
+    const initialDelay = setTimeout(() => {
+      triggerSwipe();
+      const interval = setInterval(triggerSwipe, 10000);
+      return () => clearInterval(interval);
+    }, 2000);
+
+    return () => clearTimeout(initialDelay);
+  }, []);
+
   const scroll = (direction: "left" | "right") => {
     if (scrollContainerRef.current) {
       const scrollAmount = 250;
@@ -58,7 +78,7 @@ export function PopularChips({
 
   return (
     <>
-      {/* Dynamic Keyframes for Border Loops, Floating Clouds, and Swipe Text pulses */}
+      {/* Dynamic Keyframes for Border Loops and Simulated Swipe Hand (Right to Left) */}
       <style>{`
         @keyframes spinSlow {
           0% { transform: rotate(0deg); }
@@ -68,31 +88,26 @@ export function PopularChips({
           animation: spinSlow 1s linear infinite;
         }
 
-        /* Blue and Yellow floating cloud animations */
-        @keyframes cloudMoveLeft {
-          0% { transform: translate(-20%, -20%) scale(3); }
-          50% { transform: translate(30%, 20%) scale(3.1); }
-          100% { transform: translate(-20%, -20%) scale(3); }
+        @keyframes handSwipeRightToLeft {
+          0% {
+            transform: translate(95px, 0px) scale(0.9);
+            opacity: 0;
+          }
+          20% {
+            transform: translate(95px, 0px) scale(1);
+            opacity: 1;
+          }
+          70% {
+            transform: translate(20px, 0px) scale(0.95);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(0px, 0px) scale(0.9);
+            opacity: 0;
+          }
         }
-        @keyframes cloudMoveRight {
-          0% { transform: translate(20%, 20%) scale(1.1); }
-          50% { transform: translate(-30%, -20%) scale(0.9); }
-          100% { transform: translate(20%, 20%) scale(1.1); }
-        }
-        .animate-cloud-1 {
-          animation: cloudMoveLeft 8s ease-in-out infinite;
-        }
-        .animate-cloud-2 {
-          animation: cloudMoveRight 10s ease-in-out infinite;
-        }
-
-        /* 5-second fade in / out looping animation for scroll instruction text */
-        @keyframes fadePulse {
-          0%, 100% { opacity: 0.85; }
-          10%, 90% { opacity: 0; }
-        }
-        .animate-fade-pulse {
-          animation: fadePulse 10s ease-in-out infinite;
+        .animate-hand-swipe {
+          animation: handSwipeRightToLeft 1.5s ease-in-out forwards;
         }
       `}</style>
 
@@ -101,7 +116,7 @@ export function PopularChips({
       {/* ------------------------------------------------ */}
       <section className="relative z-50 border-b bg-card/50 backdrop-blur-md">
         <div 
-          className="container mx-auto px-4 py-4" 
+          className="container mx-auto px-4 py-3" 
           onMouseLeave={() => setActiveCategory(null)}
         >
           <div className="flex items-center gap-3 relative">
@@ -117,8 +132,8 @@ export function PopularChips({
                 flex
                 items-center
                 justify-center
-                w-10
-                h-10
+                w-9
+                h-9
                 rounded-full
                 bg-background
                 transition-all
@@ -156,7 +171,7 @@ export function PopularChips({
                 hover:bg-primary/5
                 transition-colors
               ">
-                <Store className="w-4.5 h-4.5" />
+                <Store className="w-4 h-4" />
               </div>
             </Link>
 
@@ -176,7 +191,7 @@ export function PopularChips({
             {/* Scrollable Chips viewport */}
             <div 
               ref={scrollContainerRef}
-              className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 py-1 pr-12 mask-image-horizontal"
+              className="flex gap-2.5 overflow-x-auto scrollbar-hide flex-1 py-1 pr-12 mask-image-horizontal items-center"
             >
               {chips.map((cat) => {
                 const isActive = activeCategory === cat.id;
@@ -190,10 +205,10 @@ export function PopularChips({
                       whitespace-nowrap
                       rounded-full
                       border
-                      px-4
-                      py-2
+                      px-3.5
+                      py-1.5
                       text-xs
-                      font-semibold
+                      font-medium
                       transition-all
                       duration-200
                       ${isActive 
@@ -248,7 +263,7 @@ export function PopularChips({
           `}
         >
           <div className="container mx-auto px-6 py-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {hoveredCategory?.subcategories.map((sub) => (
                 <Link
                   key={sub.id}
@@ -261,8 +276,8 @@ export function PopularChips({
                     border
                     border-muted/30
                     bg-muted/10
-                    px-4
-                    py-3
+                    px-3.5
+                    py-2.5
                     text-xs
                     font-medium
                     text-foreground/80
@@ -288,14 +303,16 @@ export function PopularChips({
       {/* ------------------------------------------------ */}
       <section className="py-0 bg-background border-b border-muted/30 relative z-10">
         
-        {/* Animated Swipe Helper: Only visible on small mobile screens */}
-        <div className="block sm:hidden w-full text-center py-1.5 bg-muted/20 border-b border-muted/20">
-          <span className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase animate-fade-pulse">
-            Swipe to Explore →
-          </span>
-        </div>
+        <div className="container mx-auto relative">  
+          {/* Simulated Swipe Hand Overlay on Mobile (Right to Left) */}
+          {isSwiping && (
+            <div className="absolute inset-0 z-30 pointer-events-none flex items-start justify-end pr-12 pt-12 sm:hidden">
+              <div className="absolute bg-white/90 text-black p-3 rounded-full shadow-2xl drop-shadow-xl animate-hand-swipe flex items-center justify-center">
+                <Hand className="w-6 h-6 rotate-[15deg] scale-x-[-1] fill-current" />
+              </div>
+            </div>
+          )}
 
-        <div className="container mx-auto">  
           {/* Horizontal custom scrolling grid on mobile (4.5 items view), native grid structure on larger displays */}
           <div className="
             flex 
@@ -311,8 +328,6 @@ export function PopularChips({
           ">
             {marketplaceCategories.map((category) => {
               const Icon = category.icon;
-              const categoryCount = category.count; 
-              const isSoon = !categoryCount || categoryCount === 0;
 
               return (
                 <Link
@@ -321,7 +336,6 @@ export function PopularChips({
                   className="
                     group
                     flex-shrink-0
-                    /* Mobile: Displays 4 fully (22.2% each), 5th item split exactly in half (11.2%) */
                     w-[22.2vw]
                     sm:w-auto
                     flex
@@ -335,15 +349,15 @@ export function PopularChips({
                     p-0
                   "
                 >
-                  {/* Clean Visual Image Container - Absolutely NO border radius or spacing */}
-                  <div className="relative aspect-square w-full overflow-hidden rounded-none">
+                  {/* Clean Visual Image Container reduced by 10% */}
+                  <div className="relative aspect-[1/0.9] w-full overflow-hidden rounded-none flex items-center justify-center bg-muted/10">
                     <img
                       src={category.image}
                       alt={category.name}
                       loading="lazy"
                       className="
-                        w-full
-                        h-full
+                        w-[90%]
+                        h-[90%]
                         object-cover
                         object-center
                         transition-all
@@ -354,36 +368,37 @@ export function PopularChips({
                       "
                     />
 
-                    {/* Micro icon container in top-left */}
+                    {/* Refined micro icon container in top-left */}
                     {Icon && (
                       <div className="
                         absolute
-                        top-1.5
-                        left-1.5
-                        bg-black/40
+                        top-2
+                        left-2
+                        bg-black/50
                         backdrop-blur-md
-                        p-1
+                        p-1.5
+                        rounded-md
                         transition-transform
                         duration-300
                         group-hover:scale-110
-                       border-none
+                        border-none
                       ">
-                        <Icon className="h-3 w-3 text-white" />
+                        <Icon className="h-3.5 w-3.5 text-white" />
                       </div>
                     )}
                   </div>
 
-                  {/* Information block OUTSIDE the image container at all times */}
-                  <div className="p-1.5 sm:p-3 flex flex-col justify-between flex-grow gap-1.5">
+                  {/* Information block with optimized proportional padding and typography spacing */}
+                  <div className="p-2 sm:p-3 flex flex-col justify-between flex-grow gap-2">
                     
-                    {/* Category Name Wrapper (Semibold, compact wrap at borders, no bold) */}
+                    {/* Category Name Wrapper */}
                     <span className="
                       block 
-                      text-[10px]
+                      text-[11px]
                       sm:text-xs 
-                      font-semibold 
+                      font-medium 
                       text-foreground/90
-                      tracking-wide
+                      tracking-tight
                       break-words
                       whitespace-normal
                       leading-tight
@@ -393,66 +408,6 @@ export function PopularChips({
                     ">
                       {category.name}
                     </span>
-
-                    {/* Badge Block always rendered OUTSIDE image */}
-                    <div className="flex items-center mt-auto pt-1">
-                      {isSoon ? (
-                        /* Liquid dynamic blue and yellow background clouds */
-                        <div className="
-                          relative
-                          overflow-hidden
-                          rounded-none
-                          px-1.5
-                          py-0.5
-                          text-[8px]
-                          sm:text-[9px]
-                          font-semibold
-                          tracking-wide
-                          uppercase
-                          inline-flex
-                          items-center
-                          gap-0.5
-                          border
-                          border-blue-400/20
-                          text-blue-900
-                          dark:text-blue-100
-                          bg-blue-950/20
-                          w-full
-                          justify-center
-                        ">
-                          {/* Moving Yellow Cloud Layer */}
-                          <div className="absolute -inset-2 bg-yellow-400/30 blur-sm rounded-full animate-cloud-1 mix-blend-screen dark:mix-blend-color-dodge pointer-events-none" />
-                          {/* Moving Blue Cloud Layer */}
-                          <div className="absolute -inset-2 bg-blue-500/30 blur-sm rounded-full animate-cloud-2 mix-blend-screen dark:mix-blend-color-dodge pointer-events-none" />
-                          
-                          {/* Badge Content */}
-                          <span className="relative z-10 flex items-center gap-0.5 drop-shadow-sm">
-                            <Sparkles className="w-2 h-2 animate-pulse" /> Soon
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="
-                          rounded-none
-                          px-1.5
-                          py-0.5
-                          text-[8px]
-                          sm:text-[9px]
-                          font-semibold
-                          tracking-wide
-                          uppercase
-                          inline-flex
-                          items-center
-                          border
-                          bg-emerald-500/10 
-                          text-emerald-600 
-                          border-emerald-500/20
-                          w-full
-                          justify-center
-                        ">
-                          <span>{categoryCount} Items</span>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </Link>
               );
