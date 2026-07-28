@@ -147,20 +147,7 @@ export function Header() {
             <Search className="h-[21px] w-[21px]" />
           </button>
 
-          {user && (
-            <button
-              onClick={() => navigate("/saved")}
-              className="relative p-2 text-muted-foreground ml-[15px] hover:text-primary active:bg-muted rounded-full transition-all"
-              aria-label="Saved Ads"
-            >
-              <Heart className="h-[21px] w-[21px]" />
-              {savedCount > 0 && (
-                <span className="absolute top-1 right-1 h-4 min-w-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
-                  {savedCount > 9 ? "9+" : savedCount}
-                </span>
-              )}
-            </button>
-          )}
+
         </div>
 
         {/* Expandable Mobile Search Dropdown Area */}
