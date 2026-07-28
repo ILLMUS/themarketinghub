@@ -1,50 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-import { useSavedAds } from "@/hooks/useSavedAds"; // IMPORTED NEW HOOK HERE
+import { useSavedAds } from "@/hooks/useSavedAds";
 import { Button } from "@/components/ui/button";
-import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart, Users, Building } from "lucide-react";
+import { Search, Menu, X, Plus, User, LogOut, LayoutDashboard, MessageCircle, Heart, Building, Sparkles } from "lucide-react";
 import { SearchAutocomplete } from "@/components/SearchAutocomplete";
-
-import {  ArrowRight, ShoppingBag, FileText, CheckCircle, DollarSign,
-  Smartphone, Car, Home, Hammer, Shield, Sofa, Shirt, Briefcase, Tag,
-  Utensils, Scissors, TreePine, Landmark, Truck, Play, Pause } from "lucide-react";
- 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight } from "lucide-react";
-import { DesktopNavItem } from "@/components/navigation/DesktopNavItem";
-import {
-  Target,
-  TrendingUp,
-} from "lucide-react";
-import {
-  PlusCircle,
-  BadgeCheck,
-   MapPin,
-   Phone,
-   Mail
-} from "lucide-react";
-import {
-  Laptop,
-  Wheat,
-  Beef,
-  Banknote,
-  Sparkles,
-  Music,
-} from "lucide-react";
+import { Laptop, Banknote, Users } from "lucide-react";
 
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<any>(null);
   const [showPostText, setShowPostText] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const unreadCount = useUnreadMessages();
   
-  // FETCH CURRENT SAVED ADS LIST FROM YOUR HOOK
   const { savedAdIds } = useSavedAds();
   const savedCount = savedAdIds?.length || 0;
 
@@ -53,13 +26,7 @@ export function Header() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("advertisements")
-        .select(`
-          id,
-          title,
-          price,
-          images,
-          location
-        `)
+        .select(`id, title, price, images, location`)
         .eq("status", "approved")
         .gte("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
@@ -83,16 +50,7 @@ export function Header() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select(`
-          id,
-          name,
-          icon,
-          subcategories (
-            id,
-            name,
-            icon
-          )
-        `)
+        .select(`id, name, icon, subcategories (id, name, icon)`)
         .order("name");
 
       if (error) throw error;
@@ -112,136 +70,129 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur shadow-sm supports-[backdrop-filter]:bg-card/80 transition-all duration-200">
+    <header className="sticky top-0 z-50 border-b border-black/[0.08] dark:border-white/[0.08] bg-background/80 backdrop-blur-2xl transition-all duration-300">
       
       {/* =========================================================
-          MOBILE TOP ROW (☰ LOGO 🔍 [❤])
+          MOBILE TOP ROW (Apple Hybrid Minimalist Bar)
           ========================================================= */}
-      <div className="relative flex md:hidden h-14 items-center justify-between px-4 bg-card border-b mr-[20px] ml-[20px]">
-        {/* Left: Hamburger & Logo */}
-        <div className="flex items-center gap-3">
+      <div className="relative flex md:hidden h-12 items-center justify-between px-4">
+        {/* Left: Hamburger & Clean Title */}
+        <div className="flex items-center gap-2.5">
           <button 
-            className="p-1.5 rounded-full text-muted-foreground active:bg-muted transition-colors mr-[17px]" 
+            className="p-1 rounded-full text-foreground/80 hover:bg-muted active:scale-95 transition-all" 
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
-            {menuOpen ? <X className="h-[22px] w-[22px]" /> : <Menu className="h-[22px] w-[22px]" />}
+            {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
           
-          <Link to="/" className="flex items-center transition-transform active:scale-95">
+          <Link to="/" className="flex items-center gap-1.5 active:scale-95 transition-transform">
             <img
               src="/logo.png"
               alt="The Market Hub"
-              className="h-8 w-8 object-contain"
+              className="h-5 w-5 object-contain" 
             />
+            <span className="text-xs font-semibold tracking-tight text-foreground">
+              MarketHub
+            </span>
           </Link>
         </div>
 
-        {/* Right: Search Icon & Saved Icon */}
-        <div className="flex items-center gap-1.5 ">
+        {/* Right: Search Icon */}
+        <div className="flex items-center">
           <button
             onClick={() => setMobileSearchOpen(true)}
-            className="p-2 text-muted-foreground hover:text-primary active:bg-muted rounded-full transition-all "
-            aria-label="Search marketplace "
+            className="p-1.5 rounded-full text-foreground/80 hover:bg-muted active:scale-95 transition-all"
+            aria-label="Search marketplace"
           >
-            <Search className="h-[21px] w-[21px]" />
+            <Search className="h-4 w-4" />
           </button>
-
-
         </div>
 
         {/* Expandable Mobile Search Dropdown Area */}
         {mobileSearchOpen && (
-          <div className="absolute inset-0 z-50 flex items-center gap-2 bg-card px-4 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="absolute inset-0 z-50 flex items-center gap-2 bg-background px-4 animate-in fade-in duration-200 border-b border-border/40">
             <div className="flex-1">
-              <SearchAutocomplete className="w-full text-sm" />
+              <SearchAutocomplete className="w-full text-xs h-8 bg-muted/50 rounded-lg px-3 border-0" />
             </div>
             <button
               onClick={() => setMobileSearchOpen(false)}
-              className="p-2 text-muted-foreground hover:text-foreground rounded-full"
+              className="p-1 text-muted-foreground hover:text-foreground"
               aria-label="Close search"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         )}
       </div>
 
-
       {/* =========================================================
-          MOBILE SECOND ROW: QUICK ACTIONS (❤ 💬 ⊕ 👤 🚪)
+          MOBILE SECOND ROW: FLUID APPLE/MACOS QUICK ACTIONS BAR
           ========================================================= */}
-      <div className="md:hidden bg-card border-b shadow-sm">
-        <div className="container mx-auto">
-          <div className="flex items-center justify-between py-2 px-6 mr-[-30px] ml-[-30px]">
+      <div className="md:hidden border-t border-black/[0.04] dark:border-white/[0.04] bg-muted/30 backdrop-blur-md">
+        <div className="container mx-auto px-4 py-1.5">
+          <div className="flex items-center justify-around">
             {user ? (
               <>
-                {/* Saved Mobile Action */}
                 <button
                   onClick={() => navigate("/saved")}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted active:scale-90 transition-all"
+                  className="relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted active:scale-90 transition-all"
                 >
-                  <Heart className="h-[19px] w-[19px]" />
+                  <Heart className="h-3.5 w-3.5" />
                   {savedCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 h-4 min-w-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                    <span className="absolute top-0 right-0 h-3 min-w-3 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center shadow-xs">
                       {savedCount > 9 ? "9+" : savedCount}
                     </span>
                   )}
                 </button>
 
-                {/* Messages */}
                 <button
                   onClick={() => navigate("/messages")}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted active:scale-90 transition-all"
+                  className="relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted active:scale-90 transition-all"
                 >
-                  <MessageCircle className="h-[19px] w-[19px]" />
+                  <MessageCircle className="h-3.5 w-3.5" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 h-4 min-w-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+                    <span className="absolute top-0 right-0 h-3 min-w-3 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center shadow-xs">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
                 </button>
 
-                {/* HERO Floating Post Ad Circle Button */}
-                <div className="relative flex items-center justify-center">
-                  <button
-                    onClick={() => navigate("/post-ad")}
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-95 active:shadow-md transition-all duration-200"
-                    title="Post Ad"
-                  >
-                    <Plus className="h-6 w-6 stroke-[2.5]" />
-                  </button>
-                </div>
-
-                {/* Profile */}
                 <button
-                  onClick={() => navigate("/profile")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted active:scale-90 transition-all"
+                  onClick={() => navigate("/post-ad")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:opacity-90 active:scale-95 transition-all"
+                  title="Post Ad"
                 >
-                  <User className="h-[19px] w-[19px]" />
+                  <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                 </button>
 
-                {/* Logout */}
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted active:scale-90 transition-all"
+                >
+                  <User className="h-3.5 w-3.5" />
+                </button>
+
                 <button
                   onClick={signOut}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 active:scale-90 transition-all"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-90 transition-all"
                 >
-                  <LogOut className="h-[19px] w-[19px]" />
+                  <LogOut className="h-3.5 w-3.5" />
                 </button>
               </>
             ) : (
-              <div className="flex w-full items-center justify-between gap-4 py-0.5">
+              <div className="flex w-full items-center justify-center gap-2 py-0.5">
                 <button
                   onClick={() => navigate("/login")}
-                  className="flex-1 rounded-full border border-input py-2 text-center text-xs font-semibold shadow-sm hover:bg-muted active:scale-[0.98] transition-all"
+                  className="flex-1 rounded-full bg-muted/80 py-1 text-center text-[11px] font-medium text-foreground hover:bg-muted transition-all"
                 >
-                  Login
+                  Sign In
                 </button>
                 <button
                   onClick={() => navigate("/register")}
-                  className="flex-1 rounded-full bg-primary py-2 text-center text-xs font-semibold text-white shadow-sm hover:bg-primary/90 active:scale-[0.98] transition-all"
+                  className="flex-1 rounded-full bg-primary py-1 text-center text-[11px] font-medium text-primary-foreground shadow-xs hover:opacity-95 transition-all"
                 >
-                  Register
+                  Get Started
                 </button>
               </div>
             )}
@@ -250,80 +201,117 @@ export function Header() {
       </div>
 
       {/* =========================================================
-          DESKTOP HEADER LAYOUT
+          DESKTOP HEADER LAYOUT (Apple Glassmorphism / macOS Menu Hybrid)
           ========================================================= */}
-      <div className="hidden md:flex container mx-auto h-16 items-center justify-between gap-6 px-6">
+      <div className="hidden md:flex container mx-auto h-14 items-center justify-between gap-6 px-6">
         {/* Logo Section */}
         <Link to="/" className="flex items-center gap-2 group shrink-0">
           <img
             src="/logo.png"
             alt="The Market Hub"
-            className="h-9 w-9 object-contain transition-transform group-hover:scale-105"
+            className="h-6 w-6 object-contain transition-transform group-hover:scale-105"
           />
-          <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+          <span className="font-semibold text-sm tracking-tight text-foreground">
             MarketHub
           </span>
         </Link>
 
-        {/* Search Bar Container */}
-        <div className="flex-1 max-w-md rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-background shadow-sm transition-all duration-300 hover:border-gray-400 hover:shadow-md focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-          <SearchAutocomplete className="w-full" />
+        {/* Search Bar Container - Refined macOS Style */}
+        <div className="flex-1 max-w-sm rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-muted/40 px-3 py-1 shadow-xs transition-all duration-200 hover:border-black/20 dark:hover:border-white/20 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
+          <SearchAutocomplete className="w-full text-xs bg-transparent border-0 shadow-none focus-visible:ring-0" />
         </div>
 
         {/* Action Controls Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {user ? (
             <>
               {isAdmin && (
-                <Button variant="outline" size="sm" onClick={() => navigate("/admin")} className="rounded-lg shadow-sm hover:bg-muted">
-                  <LayoutDashboard className="h-[15px] w-[15px] mr-1.5" /> Admin
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate("/admin")} 
+                  className="rounded-full text-xs font-normal h-8 px-3 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all"
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5 mr-1.5" /> Admin
                 </Button>
               )}
               
-              {/* Animated Desktop Post Ad Button */}
+              {/* Desktop Post Ad Button */}
               <button
                 onClick={() => navigate("/post-ad")}
-                className="flex items-center justify-center h-9 px-4 rounded-lg bg-primary text-white text-sm font-medium shadow-sm hover:bg-primary/95 transition-all duration-300 ease-in-out"
+                className="flex items-center justify-center h-8 px-3.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-xs hover:opacity-90 active:scale-95 transition-all duration-200"
               >
-                <Plus className={`h-[15px] w-[15px] transition-all duration-300 ${showPostText ? "mr-1.5" : "mr-1.5"}`} />
+                <Plus className="h-3 w-3 mr-1 stroke-[2.5]" />
                 <span className="whitespace-nowrap">
                   {showPostText ? "Post Ad Now" : "Post Ad"}
                 </span>
               </button>
               
               {/* Saved Ads Desktop Icon Button */}
-              <Button variant="ghost" size="icon" onClick={() => navigate("/saved")} title="Saved Ads" className="relative text-muted-foreground hover:text-primary rounded-full h-9 w-9">
-                <Heart className="h-[19px] w-[19px]" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/saved")} 
+                title="Saved Ads" 
+                className="relative text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-full h-8 w-8 transition-all"
+              >
+                <Heart className="h-3.5 w-3.5" />
                 {savedCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-[18px] min-w-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-sm animate-in zoom-in-50 duration-200">
+                  <span className="absolute top-0 right-0 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center shadow-xs">
                     {savedCount > 9 ? "9+" : savedCount}
                   </span>
                 )}
               </Button>
               
-              <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} title="Messages" className="relative text-muted-foreground hover:text-primary rounded-full h-9 w-9">
-                <MessageCircle className="h-[19px] w-[19px]" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/messages")} 
+                title="Messages" 
+                className="relative text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-full h-8 w-8 transition-all"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-[18px] min-w-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-sm">
+                  <span className="absolute top-0 right-0 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center shadow-xs">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </Button>
               
-              <Button variant="ghost" size="icon" onClick={() => navigate("/profile")} title="Profile" className="text-muted-foreground hover:text-primary rounded-full h-9 w-9">
-                <User className="h-[19px] w-[19px]" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/profile")} 
+                title="Profile" 
+                className="text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-full h-8 w-8 transition-all"
+              >
+                <User className="h-3.5 w-3.5" />
               </Button>
               
-              <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-destructive rounded-full h-9 w-9">
-                <LogOut className="h-[19px] w-[19px]" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={signOut} 
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full h-8 w-8 transition-all"
+              >
+                <LogOut className="h-3.5 w-3.5" />
               </Button>
             </>
           ) : (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="font-medium">
+            <div className="flex items-center gap-1.5">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate("/login")} 
+                className="text-xs font-normal h-8 px-3 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-full"
+              >
                 Sign In
               </Button>
-              <Button size="sm" onClick={() => navigate("/register")} className="gradient-primary border-0 rounded-lg shadow-sm">
+              <Button 
+                size="sm" 
+                onClick={() => navigate("/register")} 
+                className="text-xs font-medium h-8 px-3.5 rounded-full bg-primary text-primary-foreground shadow-xs hover:opacity-90 transition-all"
+              >
                 Get Started
               </Button>
             </div>
@@ -335,17 +323,17 @@ export function Header() {
           MOBILE DRAWER PANEL LINKS
           ========================================================= */}
       {menuOpen && (
-        <div className="md:hidden border-t bg-card p-4 space-y-1 shadow-inner animate-in fade-in slide-in-from-top-4 duration-200">
-          <Link to="/marketplace" className="block py-2.5 px-2 text-sm font-medium tracking-wide rounded-md hover:bg-muted text-foreground/90" onClick={() => setMenuOpen(false)}>Marketplace</Link>
-          <Link to="/categories" className="block py-2.5 px-2 text-sm font-medium tracking-wide rounded-md hover:bg-muted text-foreground/90" onClick={() => setMenuOpen(false)}>Categories</Link>
-          <Link to="/how-it-works" className="block py-2.5 px-2 text-sm font-medium tracking-wide rounded-md hover:bg-muted text-foreground/90" onClick={() => setMenuOpen(false)}>How It Works</Link>
-          <Link to="/about" className="block py-2.5 px-2 text-sm font-medium tracking-wide rounded-md hover:bg-muted text-foreground/90" onClick={() => setMenuOpen(false)}>About</Link>
-          <Link to="/contact" className="block py-2.5 px-2 text-sm font-medium tracking-wide rounded-md hover:bg-muted text-foreground/90" onClick={() => setMenuOpen(false)}>Contact</Link>
+        <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-2xl p-4 space-y-1 shadow-lg animate-in fade-in duration-200">
+          <Link to="/marketplace" className="block py-2 px-3 text-xs font-medium rounded-lg hover:bg-muted text-foreground/80 hover:text-foreground transition-colors" onClick={() => setMenuOpen(false)}>Marketplace</Link>
+          <Link to="/categories" className="block py-2 px-3 text-xs font-medium rounded-lg hover:bg-muted text-foreground/80 hover:text-foreground transition-colors" onClick={() => setMenuOpen(false)}>Categories</Link>
+          <Link to="/how-it-works" className="block py-2 px-3 text-xs font-medium rounded-lg hover:bg-muted text-foreground/80 hover:text-foreground transition-colors" onClick={() => setMenuOpen(false)}>How It Works</Link>
+          <Link to="/about" className="block py-2 px-3 text-xs font-medium rounded-lg hover:bg-muted text-foreground/80 hover:text-foreground transition-colors" onClick={() => setMenuOpen(false)}>About</Link>
+          <Link to="/contact" className="block py-2 px-3 text-xs font-medium rounded-lg hover:bg-muted text-foreground/80 hover:text-foreground transition-colors" onClick={() => setMenuOpen(false)}>Contact</Link>
           
-          <div className="pt-3 mt-2 border-t border-border/60 space-y-2">
+          <div className="pt-2 mt-2 border-t border-border/40">
             {user && isAdmin && (
-              <Button variant="outline" className="w-full justify-center shadow-sm" onClick={() => { navigate("/admin"); setMenuOpen(false); }}>
-                <LayoutDashboard className="h-4 w-4 mr-1.5" /> Admin Panel
+              <Button variant="ghost" className="w-full justify-start text-xs font-normal h-8 text-muted-foreground hover:text-foreground" onClick={() => { navigate("/admin"); setMenuOpen(false); }}>
+                <LayoutDashboard className="h-3.5 w-3.5 mr-2" /> Admin Panel
               </Button>
             )}
           </div>
