@@ -59,7 +59,7 @@ export function PopularChips({
 
     const initialDelay = setTimeout(() => {
       triggerSwipe();
-      const interval = setInterval(triggerSwipe, 10000);
+      const interval = setInterval(triggerSwipe, 15000);
       return () => clearInterval(interval);
     }, 2000);
 

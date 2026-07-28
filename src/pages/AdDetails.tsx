@@ -11,13 +11,26 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { 
   MessageCircle, MapPin, ArrowLeft, ArrowRight, 
   Calendar, Heart, X, ShieldCheck, AlertTriangle, Tag,
-  Sparkles, Maximize2, User, Lock
+  Sparkles, Maximize2, User, Lock, Navigation
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShareButtons } from "@/components/ShareButtons";
 import { format } from "date-fns";
 import { toast } from "sonner";
+
+// Haversine formula to calculate distance in kilometers between two lat/lng coordinates
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
 
 const AdDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +40,17 @@ const AdDetailsPage = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [direction, setDirection] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Buyer location state fetched from localStorage
+  const [buyerCoords, setBuyerCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    const lat = localStorage.getItem("user_lat");
+    const lng = localStorage.getItem("user_lng");
+    if (lat && lng) {
+      setBuyerCoords({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    }
+  }, []);
 
   const nextImage = () => {
     if (!ad?.images) return;
@@ -66,6 +90,12 @@ const AdDetailsPage = () => {
     },
     enabled: !!id,
   });
+
+  // Calculate precise distance if both buyer and seller coordinates exist
+  const distanceKm = useMemo(() => {
+    if (!buyerCoords || ad?.lat == null || ad?.lng == null) return null;
+    return calculateDistance(buyerCoords.lat, buyerCoords.lng, ad.lat, ad.lng);
+  }, [buyerCoords, ad]);
 
   const { data: similarAds } = useQuery({
     queryKey: ["similar-ads", ad?.category_id],
@@ -145,7 +175,7 @@ const AdDetailsPage = () => {
         </div>
         <h2 className="text-2xl font-bold mb-2">Listing Not Found</h2>
         <p className="text-muted-foreground text-sm mb-6">This item may have been removed or is no longer available.</p>
-        <Button asChild rounded-full><Link to="/marketplace">Explore Marketplace</Link></Button>
+        <Button asChild className="rounded-full"><Link to="/marketplace">Explore Marketplace</Link></Button>
       </div>
     );
   }
@@ -154,6 +184,11 @@ const AdDetailsPage = () => {
   const seoDesc = (ad.description || "").replace(/\s+/g, " ").trim().slice(0, 160);
   const seoImage = adOg(ad.id);
   const canonical = `${window.location.origin}/ad/${ad.id}`;
+
+  // Build precise Google Maps source URL using lat/lng if available, fallback to text location
+  const mapEmbedUrl = ad.lat && ad.lng
+    ? `https://maps.google.com/maps?q=${ad.lat},${ad.lng}&t=&z=14&ie=UTF8&iwloc=&output=embed`
+    : `https://maps.google.com/maps?q=${encodeURIComponent(ad.location)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
 
   return (
     <div className="container py-4 sm:py-8 max-w-7xl px-3 sm:px-6 pb-24 sm:pb-12">
@@ -255,13 +290,21 @@ const AdDetailsPage = () => {
             </p>
           </div>
 
-          {/* Interactive Location Block */}
+          {/* Interactive Location & Precision Distance Block */}
           <div className="bg-card/70 backdrop-blur-md border border-border/80 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" /> Location & Pickup
               </h3>
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-muted/80">{ad.location}</span>
+              <div className="flex items-center gap-2">
+                {distanceKm !== null && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    <Navigation className="h-3 w-3" />
+                    {distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m away` : `${distanceKm.toFixed(1)} km away`}
+                  </span>
+                )}
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-muted/80">{ad.location}</span>
+              </div>
             </div>
             <div className="w-full h-44 sm:h-52 rounded-2xl overflow-hidden border border-border/60 bg-muted">
               <iframe
@@ -270,7 +313,7 @@ const AdDetailsPage = () => {
                 height="100%"
                 style={{ border: 0 }}
                 loading="lazy"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(ad.location)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                src={mapEmbedUrl}
               />
             </div>
           </div>
@@ -394,7 +437,7 @@ const AdDetailsPage = () => {
         </div>
       )}
 
-      {/* Mobile Sticky Action Deck - Enforces Secure Chat */}
+      {/* Mobile Sticky Action Deck */}
       <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-background/80 backdrop-blur-xl border-t border-border/80 md:hidden flex items-center gap-2 shadow-2xl">
         <Button onClick={handleStartConversation} className="w-full gradient-primary border-0 h-11 rounded-xl text-xs font-bold">
           <MessageCircle className="h-4 w-4 mr-2" /> Message Seller
