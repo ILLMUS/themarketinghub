@@ -5,12 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
-import { AuthPopup } from "@/components/AuthPopup"; // Import the OLX-style auth popup
+import { AuthPopup } from "@/components/AuthPopup";
 import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import AdDetails from "./pages/AdDetails";
 import PostAd from "./pages/PostAd";
-import HowItWorks from "@/pages/HowItWorks";
 import Categories from "./pages/Categories";
 import { MarketplaceCategoryPage } from "./pages/MarketplaceCategoryPage";
 import Login from "./pages/Login";
@@ -23,7 +22,16 @@ import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
 import SavedAds from "./pages/SavedAds";
 import NotFound from "./pages/NotFound";
-import ComingSoon from "./pages/ComingSoon";
+
+// Footer & Resource Pages
+import HowItWorks from "@/pages/HowItWorks";
+import FaqPage from "@/pages/FaqPage";
+import SafetyTipsPage from "@/pages/SafetyTipsPage";
+import BuyingGuidePage from "@/pages/BuyingGuidePage";
+import SellingGuidePage from "@/pages/SellingGuidePage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import TermsConditionsPage from "@/pages/TermsConditionsPage";
+import ReportListingPage from "@/pages/ReportListingPage";
 
 // Advertising Routes (Enabled)
 import Advertising from "./pages/admin/Advertising";
@@ -68,20 +76,21 @@ const App = () => (
               <Route path="/admin/advertising/new" element={<NewCampaign />} />
               <Route path="/admin/advertising/edit/:id" element={<EditCampaign />} />
               
-              {/* Informational Pages */}
+              {/* Informational & Footer Pages */}
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
-
-              {/* Coming Soon Templates */}
-              <Route path="/buying-guide" element={<ComingSoon />} />
-              <Route path="/selling-guide" element={<ComingSoon />} />
-              <Route path="/privacy-policy" element={<ComingSoon />} />
-              <Route path="/terms-and-conditions" element={<ComingSoon />} />
-              <Route path="/report-listing" element={<ComingSoon />} />
-              <Route path="/featured" element={<ComingSoon />} />
-              <Route path="/latest" element={<ComingSoon />} />
-              <Route path="/faq" element={<ComingSoon />} />
+              <Route path="/faq" element={<FaqPage />} />
+              <Route path="/safety-tips" element={<SafetyTipsPage />} />
+              <Route path="/buying-guide" element={<BuyingGuidePage />} />
+              <Route path="/selling-guide" element={<SellingGuidePage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms-and-conditions" element={<TermsConditionsPage />} />
+              <Route path="/report-listing" element={<ReportListingPage />} />
+              
+              {/* Quick Filter Links */}
+              <Route path="/featured" element={<Marketplace />} />
+              <Route path="/latest" element={<Marketplace />} />
               
               {/* 404 Catch-All Page */}
               <Route path="*" element={<NotFound />} />

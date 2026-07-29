@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Shield, UserCheck, Image as ImageIcon, Upload, Link as LinkIcon, Pencil, X, Check
+  LayoutDashboard, FileText, Clock, CheckCircle, XCircle, Star, Trash2, Eye, CreditCard, Users, Shield, UserCheck, Image as ImageIcon, Upload, Link as LinkIcon, Pencil, X, Check, AlertTriangle
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -441,6 +441,43 @@ export const AdminDashboard = () => {
     enabled: isAdmin,
   });
 
+  const { data: reportedListings, isLoading: loadingReports } = useQuery({
+    queryKey: ["admin-reported-listings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reported_listings")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  const updateReportStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("reported_listings").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reported-listings"] });
+      toast.success("Report status updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteReport = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("reported_listings").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reported-listings"] });
+      toast.success("Report removed");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: AdStatus }) => {
       const { error } = await supabase.from("advertisements").update({ status }).eq("id", id);
@@ -706,7 +743,7 @@ export const AdminDashboard = () => {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-            <p className="text-xs md:text-sm text-muted-foreground">Manage advertisements, users, and ad banners</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Manage advertisements, users, reported listings, and ad banners</p>
           </div>
         </div>
       </div>
@@ -715,152 +752,151 @@ export const AdminDashboard = () => {
         <div className="w-full overflow-x-auto scrollbar-none border-b border-border">
           <TabsList className="h-auto w-full justify-start gap-1 bg-transparent p-0 pb-px rounded-none flex flex-nowrap min-w-max">
             <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">All Ads</TabsTrigger>
-            <TabsTrigger value="pending_payment" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
-              <CreditCard className="h-3.5 w-3.5" /> Payment ({counts.pending_payment})
+            <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">All Ads ({counts.total})</TabsTrigger>
+            <TabsTrigger value="pending" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Pending Approval ({counts.pending_approval})</TabsTrigger>
+            <TabsTrigger value="payment" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Pending Payment ({counts.pending_payment})</TabsTrigger>
+            <TabsTrigger value="reports" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Reported Listings ({reportedListings?.filter(r => r.status === 'pending').length || 0})
             </TabsTrigger>
-            <TabsTrigger value="pending_approval" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
-              <Clock className="h-3.5 w-3.5" /> Approval ({counts.pending_approval})
-            </TabsTrigger>
-            <TabsTrigger value="approved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Approved</TabsTrigger>
-            <TabsTrigger value="rejected" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Rejected</TabsTrigger>
-            <TabsTrigger value="banners" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
-              <ImageIcon className="h-3.5 w-3.5" /> Banners
-            </TabsTrigger>
-            <TabsTrigger value="users" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm gap-1.5">
-              <Users className="h-3.5 w-3.5" /> Users ({users?.length ?? 0})
-            </TabsTrigger>
+            <TabsTrigger value="users" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Users ({users?.length ?? 0})</TabsTrigger>
+            <TabsTrigger value="banners" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 py-2 text-xs md:text-sm">Ad Banners</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="overview" className="space-y-6 mt-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
-            {[
-              { label: "Total Ads", count: counts.total, icon: FileText, color: "text-primary" },
-              { label: "Pending Payment", count: counts.pending_payment, icon: CreditCard, color: "text-amber-500" },
-              { label: "Pending Approval", count: counts.pending_approval, icon: Clock, color: "text-blue-500" },
-              { label: "Approved", count: counts.approved, icon: CheckCircle, color: "text-green-500" },
-              { label: "Rejected", count: counts.rejected, icon: XCircle, color: "text-destructive" },
-            ].map((item) => (
-              <div key={item.label} className="border rounded-xl p-3 md:p-4 bg-card shadow-sm flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <p className="text-xs text-muted-foreground font-medium line-clamp-1">{item.label}</p>
-                  <item.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                </div>
-                <p className="text-xl md:text-2xl font-bold tracking-tight">{item.count}</p>
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="border rounded-xl p-4 bg-card shadow-sm space-y-1">
+              <span className="text-xs text-muted-foreground font-medium">Total Ads</span>
+              <h3 className="text-2xl font-bold">{counts.total}</h3>
+            </div>
+            <div className="border rounded-xl p-4 bg-card shadow-sm space-y-1">
+              <span className="text-xs text-muted-foreground font-medium">Pending Review</span>
+              <h3 className="text-2xl font-bold text-secondary-foreground">{counts.pending_approval}</h3>
+            </div>
+            <div className="border rounded-xl p-4 bg-card shadow-sm space-y-1">
+              <span className="text-xs text-muted-foreground font-medium">Approved & Live</span>
+              <h3 className="text-2xl font-bold text-success">{counts.approved}</h3>
+            </div>
+            <div className="border rounded-xl p-4 bg-card shadow-sm space-y-1">
+              <span className="text-xs text-muted-foreground font-medium">Reported Listings</span>
+              <h3 className="text-2xl font-bold text-destructive">{reportedListings?.filter(r => r.status === 'pending').length || 0}</h3>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="all"><AdTable ads={allAds} /></TabsContent>
+        <TabsContent value="pending"><AdTable ads={filterAds("pending_approval")} /></TabsContent>
+        <TabsContent value="payment"><AdTable ads={filterAds("pending_payment")} /></TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <div className="border rounded-xl p-5 bg-card shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-lg">Reported Listings</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Review user reports concerning fraudulent or prohibited items.</p>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-base md:text-lg">Recent Advertisements</h3>
-            <AdTable ads={allAds?.slice(0, 10)} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="all" className="mt-0"><AdTable ads={allAds} /></TabsContent>
-        <TabsContent value="pending_payment" className="mt-0"><AdTable ads={filterAds("pending_payment")} /></TabsContent>
-        <TabsContent value="pending_approval" className="mt-0"><AdTable ads={filterAds("pending_approval")} /></TabsContent>
-        <TabsContent value="approved" className="mt-0"><AdTable ads={filterAds("approved")} /></TabsContent>
-        <TabsContent value="rejected" className="mt-0"><AdTable ads={filterAds("rejected")} /></TabsContent>
-
-        {/* Ad Banners Tab */}
-        <TabsContent value="banners" className="mt-0 space-y-6">
-          <AdminAdManager />
-        </TabsContent>
-
-        {/* Users Tab */}
-        <TabsContent value="users" className="mt-0">
-          <div className="grid grid-cols-1 gap-4 md:hidden">
-            {users?.map((u) => {
-              const userIsAdmin = u.roles.some((r: { role: string }) => r.role === "admin");
-              return (
-                <div key={u.id} className="border rounded-xl p-4 bg-card space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-sm text-foreground">{u.name}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Joined {new Date(u.created_at).toLocaleDateString()}
-                      </p>
+            {loadingReports ? (
+              <p className="text-xs text-muted-foreground py-6 text-center">Loading reports...</p>
+            ) : reportedListings && reportedListings.length > 0 ? (
+              <div className="space-y-3">
+                {reportedListings.map((report: any) => (
+                  <div key={report.id} className="border rounded-lg p-4 space-y-2 bg-muted/20">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-semibold text-sm flex items-center gap-1.5">
+                          <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                          {report.listing_title}
+                        </h4>
+                        {report.listing_link && (
+                          <a href={report.listing_link} target="_blank" rel="noreferrer" className="text-xs text-primary underline truncate block max-w-md mt-0.5">
+                            {report.listing_link}
+                          </a>
+                        )}
+                      </div>
+                      <Badge variant={report.status === 'pending' ? 'destructive' : 'outline'} className="text-[10px]">
+                        {report.status}
+                      </Badge>
                     </div>
-                    <Badge variant={userIsAdmin ? "default" : "secondary"} className="text-[10px]">
-                      {userIsAdmin ? (
-                        <><Shield className="h-3 w-3 mr-1" /> Admin</>
-                      ) : (
-                        <><UserCheck className="h-3 w-3 mr-1" /> User</>
-                      )}
-                    </Badge>
+                    <p className="text-xs bg-background p-2.5 rounded border border-border/60 text-foreground">
+                      <span className="font-semibold text-muted-foreground block mb-0.5">Reason:</span>
+                      {report.reason}
+                    </p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[11px] text-muted-foreground">
+                        Submitted: {new Date(report.created_at).toLocaleDateString()}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {report.status === 'pending' ? (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => updateReportStatus.mutate({ id: report.id, status: 'resolved' })}>
+                            Mark Resolved
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => updateReportStatus.mutate({ id: report.id, status: 'pending' })}>
+                            Reopen
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => { if (confirm("Delete this report?")) deleteReport.mutate(report.id); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="pt-2 border-t border-border/60 flex justify-end">
-                    <Button
-                      size="sm"
-                      className="w-full text-xs"
-                      variant={userIsAdmin ? "destructive" : "outline"}
-                      onClick={() => {
-                        if (userIsAdmin && !confirm("Remove admin role from this user?")) return;
-                        toggleRole.mutate({ userId: u.user_id, isCurrentlyAdmin: userIsAdmin });
-                      }}
-                    >
-                      {userIsAdmin ? "Remove Admin Role" : "Promote to Admin"}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-            {(!users || users.length === 0) && (
-              <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground text-sm">No users found</div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-8">No reported listings found.</p>
             )}
           </div>
+        </TabsContent>
 
-          <div className="hidden md:block border rounded-lg overflow-hidden">
+        <TabsContent value="users" className="space-y-4">
+          <div className="border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left p-3 font-medium">User Name</th>
-                    <th className="text-left p-3 font-medium">Joined Date</th>
+                    <th className="text-left p-3 font-medium">User</th>
+                    <th className="text-left p-3 font-medium">Phone</th>
                     <th className="text-left p-3 font-medium">Role</th>
                     <th className="text-right p-3 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users?.map((u) => {
-                    const userIsAdmin = u.roles.some((r: { role: string }) => r.role === "admin");
+                  {users?.map((u: any) => {
+                    const isAdminUser = u.roles?.some((r: any) => r.role === "admin");
                     return (
                       <tr key={u.id} className="border-t hover:bg-muted/30">
-                        <td className="p-3 font-medium">{u.name}</td>
-                        <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</td>
+                        <td className="p-3 font-medium">{u.full_name || "Unnamed User"}</td>
+                        <td className="p-3 text-muted-foreground">{u.phone_number || "No Phone"}</td>
                         <td className="p-3">
-                          <Badge variant={userIsAdmin ? "default" : "secondary"} className="text-[10px]">
-                            {userIsAdmin ? <><Shield className="h-3 w-3 mr-1" /> Admin</> : <><UserCheck className="h-3 w-3 mr-1" /> User</>}
+                          <Badge variant={isAdminUser ? "default" : "outline"}>
+                            {isAdminUser ? "Admin" : "User"}
                           </Badge>
                         </td>
                         <td className="p-3 text-right">
                           <Button
                             size="sm"
-                            variant={userIsAdmin ? "destructive" : "outline"}
-                            className="text-xs h-8"
-                            onClick={() => {
-                              if (userIsAdmin && !confirm("Remove admin role from this user?")) return;
-                              toggleRole.mutate({ userId: u.user_id, isCurrentlyAdmin: userIsAdmin });
-                            }}
+                            variant="outline"
+                            onClick={() => toggleRole.mutate({ userId: u.user_id, isCurrentlyAdmin: isAdminUser })}
                           >
-                            {userIsAdmin ? "Remove Admin" : "Promote to Admin"}
+                            {isAdminUser ? "Remove Admin" : "Make Admin"}
                           </Button>
                         </td>
                       </tr>
                     );
                   })}
-                  {(!users || users.length === 0) && (
-                    <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No users found</td></tr>
-                  )}
                 </tbody>
               </table>
             </div>
           </div>
         </TabsContent>
+
+        <TabsContent value="banners"><AdminAdManager /></TabsContent>
       </Tabs>
     </div>
   );
 };
+
 export default AdminDashboard;

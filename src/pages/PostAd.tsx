@@ -14,13 +14,23 @@ import imageCompression from "browser-image-compression";
 import {
   analyzePhoto,
   PhotoAnalysis,
-
 } from "../utils/photoAnalyzer";
 
 import { PhotoScoreCard } from "../components/PhotoScoreCard";
 import SEO from "@/components/seo/SEO";
 
-const LOCATIONS = ["Mbabane", "Manzini", "Siteki", "Big Bend", "Nhlangano", "Matsapha", "Piggs Peak"];
+// Coordinates mapping for Eswatini regional hubs
+const LOCATION_COORDS: Record<string, { lat: number; lng: number }> = {
+  "Mbabane": { lat: -26.3167, lng: 31.1333 },
+  "Manzini": { lat: -26.4833, lng: 31.3667 },
+  "Siteki": { lat: -26.4561, lng: 31.9511 },
+  "Big Bend": { lat: -26.8167, lng: 31.9333 },
+  "Nhlangano": { lat: -27.1167, lng: 31.2000 },
+  "Matsapha": { lat: -26.5000, lng: 31.3167 },
+  "Piggs Peak": { lat: -25.9653, lng: 31.2536 }
+};
+
+const LOCATIONS = Object.keys(LOCATION_COORDS);
 
 type Tier = "e500" | "e350" | "e250";
 const TIERS: { id: Tier; price: number; name: string; perks: string[]; highlight?: boolean }[] = [
@@ -46,7 +56,6 @@ const TIERS: { id: Tier; price: number; name: string; perks: string[]; highlight
 ];
 
 const PostAdPage = () => {
-  console.log("POST AD PAGE RENDERED");
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,8 +66,7 @@ const PostAdPage = () => {
   const [tierSelected, setTierSelected] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [photoAnalysis, setPhotoAnalysis] =
-  useState<PhotoAnalysis[]>([]);
+  const [photoAnalysis, setPhotoAnalysis] = useState<PhotoAnalysis[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -71,9 +79,9 @@ const PostAdPage = () => {
     location: "",
     tier: "e250" as Tier,
   });
-const [optimizing, setOptimizing] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizationProgress, setOptimizationProgress] = useState(0);
 
-const [optimizationProgress, setOptimizationProgress] = useState(0);
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -136,91 +144,56 @@ const [optimizationProgress, setOptimizationProgress] = useState(0);
     );
   }
 
-const handleImageAdd = async (
-  e: React.ChangeEvent<HTMLInputElement>
-) => {
-  console.log("NEW HANDLE IMAGE ADD IS RUNNING");
-  const selectedFiles = Array.from(e.target.files || []);
+  const handleImageAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
 
-  if (images.length + selectedFiles.length > 5) {
-    toast.error("Maximum 5 images allowed");
-    return;
-  }
-
-  setOptimizing(true);
-
-  try {
-    const compressedFiles: File[] = [];
-    const newPreviews: string[] = [];
-
-    for (let i = 0; i < selectedFiles.length; i++) {
-
-      const file = selectedFiles[i];
-
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 0.7,
-        maxWidthOrHeight: 1600,
-        useWebWorker: true,
-
-        onProgress: (progress) => {
-          setOptimizationProgress(progress);
-        },
-      });
-
-      compressedFiles.push(compressed);
-const analysis = await analyzePhoto(compressed);
-
-console.log("Analysis returned:", analysis);
-
-setPhotoAnalysis((prev) => {
-  console.log("Updating state...");
-  return [...prev, analysis];
-});
-      newPreviews.push(
-        URL.createObjectURL(compressed)
-      );
-
-      const saved = (
-        ((file.size - compressed.size) /
-          file.size) *
-        100
-      ).toFixed(0);
-
-      toast.success(
-        `${file.name}
-${(file.size / 1024 / 1024).toFixed(1)} MB → ${(compressed.size / 1024).toFixed(0)} KB
-Saved ${saved}%`
-      );
+    if (images.length + selectedFiles.length > 5) {
+      toast.error("Maximum 5 images allowed");
+      return;
     }
 
-    setImages((prev) => [
-      ...prev,
-      ...compressedFiles,
-    ]);
+    setOptimizing(true);
 
-    setPreviews((prev) => [
-      ...prev,
-      ...newPreviews,
-    ]);
+    try {
+      const compressedFiles: File[] = [];
+      const newPreviews: string[] = [];
 
-  } catch (err) {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
 
-    console.error(err);
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.7,
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+          onProgress: (progress) => {
+            setOptimizationProgress(progress);
+          },
+        });
 
-    toast.error("Failed to optimize image");
+        compressedFiles.push(compressed);
+        const analysis = await analyzePhoto(compressed);
+        setPhotoAnalysis((prev) => [...prev, analysis]);
+        newPreviews.push(URL.createObjectURL(compressed));
 
-  } finally {
+        const saved = (((file.size - compressed.size) / file.size) * 100).toFixed(0);
+        toast.success(`${file.name} — Saved ${saved}%`);
+      }
 
-    setOptimizing(false);
-
-    setOptimizationProgress(0);
-
-  }
-};
+      setImages((prev) => [...prev, ...compressedFiles]);
+      setPreviews((prev) => [...prev, ...newPreviews]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to optimize image");
+    } finally {
+      setOptimizing(false);
+      setOptimizationProgress(0);
+    }
+  };
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
+    setPhotoAnalysis((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -232,7 +205,6 @@ Saved ${saved}%`
 
     setSubmitting(true);
     try {
-      // Upload images
       const imageUrls: string[] = [];
       for (const file of images) {
         const ext = file.name.split(".").pop();
@@ -242,6 +214,9 @@ Saved ${saved}%`
         const { data: { publicUrl } } = supabase.storage.from("ad-images").getPublicUrl(path);
         imageUrls.push(publicUrl);
       }
+
+      // Automatically fetch matching lat and lng based on selected location name
+      const coords = LOCATION_COORDS[form.location] || { lat: -26.3167, lng: 31.1333 };
 
       const { error } = await supabase.from("advertisements").insert({
         user_id: user.id,
@@ -253,6 +228,8 @@ Saved ${saved}%`
         phone: form.phone,
         email: form.email,
         location: form.location,
+        lat: coords.lat,  // Saved to database automatically
+        lng: coords.lng,  // Saved to database automatically
         images: imageUrls,
         status: "pending_payment",
         tier: form.tier,
@@ -295,9 +272,6 @@ Saved ${saved}%`
               <p><strong>Email:</strong> themarkethub51@gmail.com</p>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Once payment is verified, your advertisement will be approved and published on the platform.
-          </p>
         </div>
         <Button className="mt-6 gradient-primary border-0" onClick={() => navigate("/")}>
           Back to Home
@@ -370,310 +344,89 @@ Saved ${saved}%`
           </div>
         </div>
 
-        {/* Images */}
+        {/* Images Upload Section */}
+        <div className="space-y-4">
+          <Label className="text-base font-semibold">Upload Photos</Label>
 
-
-<div className="space-y-4">
-
-  <Label className="text-base font-semibold">
-    Upload Photos
-  </Label>
-
-<div
-onClick={() => {
-  console.log("UPLOAD BOX CLICKED");
-  fileInputRef.current?.click();
-}}
-  onDragEnter={(e) => {
-    e.preventDefault();
-    setDragActive(true);
-  }}
-
-  onDragOver={(e) => {
-    e.preventDefault();
-    setDragActive(true);
-  }}
-
-  onDragLeave={(e) => {
-    e.preventDefault();
-    setDragActive(false);
-  }}
-
-  onDrop={(e) => {
-    e.preventDefault();
-    setDragActive(false);
-
-    const files = Array.from(e.dataTransfer.files);
-
-    if (images.length + files.length > 5) {
-      toast.error("Maximum 5 images allowed");
-      return;
-    }
-
-    setImages((prev) => [...prev, ...files]);
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-
-      reader.onload = (ev) => {
-        setPreviews((prev) => [
-          ...prev,
-          ev.target?.result as string,
-        ]);
-      };
-
-      reader.readAsDataURL(file);
-    });
-  }}
-
-  className={`
-      group
-      relative
-      cursor-pointer
-      rounded-2xl
-      border-2
-      border-dashed
-      p-10
-      transition-all
-      duration-300
-
-      ${
-        dragActive
-          ? "border-primary bg-primary/20 scale-[1.02] shadow-2xl"
-          : "border-primary/30 bg-primary/5 hover:border-primary hover:bg-primary/10"
-      }
-  `}
->
-
-<div className="flex flex-col items-center justify-center text-center">
-
-  {optimizing ? (
-
-    <>
-      <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-
-      <h3 className="text-lg font-bold">
-        Optimizing Images...
-      </h3>
-
-      <p className="mt-2 text-sm text-muted-foreground">
-        Please wait while we compress your photos.
-      </p>
-
-      <div className="w-full max-w-xs mt-5">
-        <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${optimizationProgress}%` }}
-          />
-        </div>
-
-        <p className="mt-2 text-sm font-medium">
-          {optimizationProgress.toFixed(0)}%
-        </p>
-      </div>
-    </>
-
-  ) : (
-
-    <>
-
-      <div
-        className={`
-          mb-5
-          rounded-full
-          bg-primary/10
-          p-5
-          transition-all
-          duration-300
-          ${
-            dragActive
-              ? "scale-125 rotate-6 bg-primary text-white"
-              : "group-hover:scale-110"
-          }
-        `}
-      >
-        <Upload
-          className={`
-            h-10
-            w-10
-            transition-colors
-            duration-300
-            ${dragActive ? "text-white" : "text-primary"}
-          `}
-        />
-      </div>
-
-      <h3 className="text-lg font-bold">
-        {dragActive
-          ? "Drop your photos here"
-          : "Drag & Drop Photos Here"}
-      </h3>
-
-      <p className="mt-2 text-sm text-muted-foreground">
-        {dragActive
-          ? "Release your mouse to upload"
-          : "or click to browse your device"}
-      </p>
-
-      <div className="mt-5 flex flex-wrap justify-center gap-2">
-
-        <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-          JPG
-        </span>
-
-        <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-          PNG
-        </span>
-
-        <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-          WEBP
-        </span>
-
-        <span className="rounded-full bg-primary px-3 py-1 text-xs text-white">
-          {images.length}/5 Photos
-        </span>
-
-      </div>
-
-    </>
-
-  )}
-
-</div>
-
-  </div>
-
-  <input
-    ref={fileInputRef}
-    type="file"
-    accept="image/*"
-    multiple
-    className="hidden"
-    onChange={handleImageAdd}
-  />
-
-  {previews.length > 0 && (
-
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      {previews.map((src, i) => (
-
-        <div
-          key={i}
-          className="
-            group
-            relative
-            overflow-hidden
-            rounded-xl
-            border
-            shadow-sm
-          "
-        >
-
-          <img
-            src={src}
-            alt=""
-            className="
-              h-40
-              w-full
-              object-cover
-              transition-transform
-              duration-300
-              group-hover:scale-105
-            "
-          />
-<div className="absolute bottom-2 left-2">
-
-  <span
-    className={`
-      rounded-full
-      px-3
-      py-1
-      text-xs
-      font-semibold
-      text-white
-      ${photoAnalysis[i]?.color}
-    `}
-  >
-    {photoAnalysis[i]?.label}
-  </span>
-
-</div>
-          {i === 0 && (
-
-            <span
-              className="
-                absolute
-                left-2
-                top-2
-                rounded-full
-                bg-primary
-                px-3
-                py-1
-                text-xs
-                font-semibold
-                text-white
-              "
-            >
-
-              Cover Photo
-
-            </span>
-
-          )}
-
-          <button
-            type="button"
-            onClick={() => removeImage(i)}
-            className="
-              absolute
-              right-2
-              top-2
-              rounded-full
-              bg-red-600
-              p-2
-              text-white
-              opacity-0
-              transition-opacity
-              group-hover:opacity-100
-            "
+            onClick={() => fileInputRef.current?.click()}
+            onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+            onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+            onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragActive(false);
+              const files = Array.from(e.dataTransfer.files);
+              if (images.length + files.length > 5) {
+                toast.error("Maximum 5 images allowed");
+                return;
+              }
+              setImages((prev) => [...prev, ...files]);
+              files.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  setPreviews((prev) => [...prev, ev.target?.result as string]);
+                };
+                reader.readAsDataURL(file);
+              });
+            }}
+            className={`group relative cursor-pointer rounded-2xl border-2 border-dashed p-10 transition-all duration-300 ${
+              dragActive ? "border-primary bg-primary/20 scale-[1.02]" : "border-primary/30 bg-primary/5 hover:border-primary hover:bg-primary/10"
+            }`}
           >
+            <div className="flex flex-col items-center justify-center text-center">
+              {optimizing ? (
+                <>
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                  <h3 className="text-lg font-bold">Optimizing Images...</h3>
+                  <div className="w-full max-w-xs mt-5">
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary transition-all" style={{ width: `${optimizationProgress}%` }} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-5 rounded-full bg-primary/10 p-5 group-hover:scale-110 transition-all">
+                    <Upload className="h-10 w-10 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold">Drag & Drop Photos Here</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">or click to browse your device</p>
+                  <span className="mt-4 rounded-full bg-primary px-3 py-1 text-xs text-white">
+                    {images.length}/5 Photos
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
 
-            <X className="h-4 w-4" />
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAdd} />
 
-          </button>
-
+          {previews.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {previews.map((src, i) => (
+                <div key={i} className="group relative overflow-hidden rounded-xl border shadow-sm">
+                  <img src={src} alt="" className="h-40 w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {photoAnalysis[i] && (
+                    <div className="absolute bottom-2 left-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${photoAnalysis[i].color}`}>
+                        {photoAnalysis[i].label}
+                      </span>
+                    </div>
+                  )}
+                  {i === 0 && (
+                    <span className="absolute left-2 top-2 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold text-white">
+                      Cover
+                    </span>
+                  )}
+                  <button type="button" onClick={() => removeImage(i)} className="absolute right-2 top-2 rounded-full bg-red-600 p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-
-      ))}
-
-    </div>
-
-  )}
-
-  <div className="rounded-xl bg-muted/40 p-4">
-
-    <p className="font-medium mb-2">
-
-      📸 Tips for more views
-
-    </p>
-
-    <ul className="space-y-1 text-sm text-muted-foreground">
-
-      <li>✓ Use daylight when taking photos.</li>
-
-      <li>✓ Upload at least 3 photos.</li>
-
-      <li>✓ Make the first image your best one.</li>
-
-      <li>✓ Avoid blurry or dark images.</li>
-
-    </ul>
-
-  </div>
-
-</div>
 
         <Button type="submit" size="lg" disabled={submitting} className="w-full gradient-primary border-0">
           {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : "Submit Advertisement"}
