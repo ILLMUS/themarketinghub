@@ -93,7 +93,7 @@ export function Header() {
               className="h-5 w-5 object-contain" 
             />
             <span className="text-xs font-semibold tracking-tight text-foreground">
-              MarketHub
+              The Market Hub
             </span>
           </Link>
         </div>
@@ -212,7 +212,7 @@ export function Header() {
             className="h-6 w-6 object-contain transition-transform group-hover:scale-105"
           />
           <span className="font-semibold text-sm tracking-tight text-foreground">
-            MarketHub
+            The Market Hub
           </span>
         </Link>
 

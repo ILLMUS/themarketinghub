@@ -119,7 +119,7 @@ const HomePage = () => {
   return (
     <div>
       <Seo
-        title="Market Hub – Buy & Sell in Eswatini | Classifieds Marketplace"
+        title="The Market Hub – Buy & Sell in Eswatini | Classifieds Marketplace"
         description="Eswatini's #1 online marketplace. Browse cars, property, electronics, services and more."
         type="website"
       />
