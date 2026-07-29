@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,6 +40,21 @@ import Advertising from "./pages/admin/Advertising";
 import NewCampaign from "./pages/admin/NewCampaign";
 import EditCampaign from "./pages/admin/EditCampaign";
 
+// ScrollToTop Helper Component with smooth scrolling
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth", // Creates a smooth, elegant glide back to the top
+    });
+  }, [pathname]);
+
+  return null;
+};
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -46,6 +63,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           {/* Global OLX-style timed Google Auth Popup */}
           <AuthPopup />
