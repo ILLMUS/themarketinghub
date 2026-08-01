@@ -611,9 +611,9 @@ export const AdminDashboard = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="e500">E500 Spotlight</SelectItem>
-                    <SelectItem value="e350">E350 Boosted</SelectItem>
-                    <SelectItem value="e250">E250 Standard</SelectItem>
+                    <SelectItem value="e500">E100 Spotlight</SelectItem>
+                    <SelectItem value="e350">E50 Boosted</SelectItem>
+                    <SelectItem value="e250">Free Standard</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -683,9 +683,9 @@ export const AdminDashboard = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="e500">E500 Spotlight</SelectItem>
-                        <SelectItem value="e350">E350 Boosted</SelectItem>
-                        <SelectItem value="e250">E250 Standard</SelectItem>
+                        <SelectItem value="e500">E100 Spotlight</SelectItem>
+                        <SelectItem value="e350">E50 Boosted</SelectItem>
+                        <SelectItem value="e250">Free Standard</SelectItem>
                       </SelectContent>
                     </Select>
                   </td>

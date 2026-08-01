@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { marketplaceCategories } from "@/data/marketplaceCategories";
 import { Seo } from "@/hooks/useSeo";
-import { CategoryBanner } from "@/components/CategoryBanner"; // Adjust import path if needed
+import { CategoryBanner } from "@/components/CategoryBanner";
 
 const CategoriesPage = () => {
   return (
@@ -55,19 +55,19 @@ const CategoriesPage = () => {
                 to={`/marketplace?category=${category.id}`}
                 className="flex items-center gap-4 group"
               >
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="
-                    h-20
-                    w-20
-                    rounded-xl
-                    object-cover
-                    flex-shrink-0
-                    transition-transform
-                    group-hover:scale-[1.03]
-                  "
-                />
+                <div className="h-20 w-20 rounded-xl bg-muted/30 flex items-center justify-center p-1 flex-shrink-0 overflow-hidden">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="
+                      max-h-full
+                      max-w-full
+                      object-contain
+                      transition-transform
+                      group-hover:scale-105
+                    "
+                  />
+                </div>
                 <div>
                   <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
                     {category.name}

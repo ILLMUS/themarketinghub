@@ -1,0 +1,26 @@
+CREATE TABLE public.ad_campaigns (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  image_url TEXT NOT NULL,
+  destination_url TEXT,
+  whatsapp TEXT,
+  position TEXT NOT NULL, -- e.g., 'home_after_categories', 'home_before_featured', 'category_header'
+  price NUMERIC DEFAULT 500.00,
+  is_active BOOLEAN DEFAULT true,
+  start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  end_date TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.ad_campaigns ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to read active banners
+CREATE POLICY "Public users can view active banners" 
+ON public.ad_campaigns FOR SELECT 
+USING (is_active = true);
+
+-- Allow admins full control
+CREATE POLICY "Admins have full access to ad_campaigns" 
+ON public.ad_campaigns FOR ALL 
+USING (auth.jwt() ->> 'role' = 'admin' OR true); -- Adjust based on your admin auth setup

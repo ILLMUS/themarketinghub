@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, X, CheckCircle, Loader2 } from "lucide-react";
+import { Upload, X, CheckCircle, Loader2, Zap, Crown, Rocket, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import imageCompression from "browser-image-compression";
 import {
@@ -32,28 +32,109 @@ const LOCATION_COORDS: Record<string, { lat: number; lng: number }> = {
 
 const LOCATIONS = Object.keys(LOCATION_COORDS);
 
-type Tier = "e500" | "e350" | "e250";
-const TIERS: { id: Tier; price: number; name: string; perks: string[]; highlight?: boolean }[] = [
+type Tier = "free" | "e50" | "e100" | "e500";
+const TIERS: { 
+  id: Tier; 
+  price: number; 
+  name: string; 
+  subtitle: string;
+  description: string;
+  durationDays: number;
+  perks: string[]; 
+  highlight?: boolean;
+  buttonText: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    id: "free",
+    price: 0,
+    name: "Standard Listing",
+    subtitle: "Forever Free",
+    description: "The traditional way to get seen.",
+    durationDays: 15,
+    perks: [
+      "Standard marketplace visibility",
+      "Up to 5 high-resolution photos",
+      "Direct buyer-to-seller chat messaging",
+      "Share your listing across our social media channels",
+      "Active for 15 days"
+    ],
+    buttonText: "List For Free",
+    icon: <ShieldCheck className="h-5 w-5 text-muted-foreground" />,
+  },
+  {
+    id: "e50",
+    price: 50,
+    name: "Featured",
+    subtitle: "One-Time Boost",
+    description: "Outshine the crowd and move your item faster.",
+    durationDays: 30,
+    perks: [
+      "3× More Visibility with higher search placement",
+      "Featured badge on your listing",
+      "Up to 5 high-resolution photos",
+      "Share your listing across our social media channels",
+      "Active for 30 days"
+    ],
+    buttonText: "Supercharge My Ad (E50)",
+    icon: <Zap className="h-5 w-5 text-primary" />,
+  },
+  {
+    id: "e100",
+    price: 100,
+    name: "Premium",
+    subtitle: "Maximum Impact",
+    description: "Built for serious sellers who want maximum exposure.",
+    durationDays: 45,
+    perks: [
+      "Guaranteed Top-of-Feed Placement",
+      "Up to 5 high-resolution photos",
+      "Premium badge on your listing",
+      "1 day post social media promotion boost",
+      "Share your listing across our social media channels",
+      "Active for 45 days"
+    ],
+    buttonText: "Go Premium (E100)",
+    icon: <Crown className="h-5 w-5 text-primary" />,
+  },
   {
     id: "e500",
     price: 500,
-    name: "Spotlight",
-    perks: ["Featured in the homepage hero", "Premium placement below the hero", "Maximum visibility"],
+    name: "Homepage Spotlight Banner",
+    subtitle: "7-Day Facebook Campaign",
+    description: "Own the homepage. Dominate the marketplace.",
+    durationDays: 7,
+    perks: [
+      "Premium homepage banner placement",
+      "Direct click-through to your listing or website",
+      "Professionally designed promotional banner",
+      "Image enhancement and optimization", 
+      "Featured across the entire website",
+      "7-day Facebook promotional campaign",
+      "Maximum visibility for high-value products and services",
+      "Share your listing across our social media channels",
+      "Active for 60 days"
+    ],
     highlight: true,
-  },
-  {
-    id: "e350",
-    price: 350,
-    name: "Boosted",
-    perks: ["Featured strip on the homepage", "Shown above 'How It Works'", "Higher visibility than standard"],
-  },
-  {
-    id: "e250",
-    price: 250,
-    name: "Standard",
-    perks: ["Listed in the Latest Listings section", "Shown across the marketplace", "30-day listing"],
+    buttonText: "Claim The Spotlight (E500)",
+    icon: <Rocket className="h-5 w-5 text-accent-foreground" />,
   },
 ];
+
+// Helper to safely map frontend tiers to allowed database enums ('e250' | 'e350' | 'e500')
+const mapTierToDatabaseEnum = (frontendTier: Tier): "e250" | "e350" | "e500" => {
+  switch (frontendTier) {
+    case "free":
+    case "e50":
+      return "e250";
+    case "e100":
+      return "e350";
+    case "e500":
+      return "e500";
+    default:
+      return "e250";
+  }
+};
 
 const PostAdPage = () => {
   const { user } = useAuth();
@@ -62,7 +143,7 @@ const PostAdPage = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [submittedTier, setSubmittedTier] = useState<Tier>("e250");
+  const [submittedTier, setSubmittedTier] = useState<Tier>("free");
   const [tierSelected, setTierSelected] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -77,7 +158,7 @@ const PostAdPage = () => {
     phone: "",
     email: user?.email || "",
     location: "",
-    tier: "e250" as Tier,
+    tier: "free" as Tier,
   });
   const [optimizing, setOptimizing] = useState(false);
   const [optimizationProgress, setOptimizationProgress] = useState(0);
@@ -102,12 +183,20 @@ const PostAdPage = () => {
 
   if (!tierSelected) {
     return (
-      <div className="container max-w-5xl py-10">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">Choose Your Listing Plan</h1>
-          <p className="text-muted-foreground">Pick a plan to get started — you'll fill in your ad details next.</p>
+      <div className="container max-w-7xl py-12 px-4 sm:px-6">
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <span className="text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
+            Flexible Plans
+          </span>
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mt-4 mb-4">
+            Choose Your Listing Plan
+          </h1>
+          <p className="text-muted-foreground text-base md:text-lg">
+            Pick a plan to get started — you'll fill in your ad details next.
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
           {TIERS.map((t) => (
             <button
               type="button"
@@ -117,25 +206,56 @@ const PostAdPage = () => {
                 setTierSelected(true);
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className={`text-left rounded-xl border-2 p-6 transition-all hover:shadow-lg hover:-translate-y-0.5 ${
-                t.highlight ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/50"
+              className={`text-left rounded-2xl border p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between group relative bg-card ${
+                t.highlight 
+                  ? "border-primary/80 ring-2 ring-primary/20 shadow-lg bg-gradient-to-b from-primary/[0.03] to-transparent" 
+                  : "border-border/80 hover:border-primary/50"
               }`}
             >
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs font-bold uppercase tracking-widest text-primary">{t.name}</span>
-                {t.highlight && (
-                  <span className="text-[10px] bg-accent text-accent-foreground px-2 py-0.5 rounded">BEST VALUE</span>
-                )}
+              {t.highlight && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+                    Most Popular
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2.5 rounded-xl bg-muted/60 group-hover:bg-primary/10 transition-colors">
+                    {t.icon}
+                  </div>
+                  <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    {t.subtitle}
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-bold tracking-tight mb-1">{t.name}</h3>
+                <p className="text-xs text-muted-foreground min-h-[2rem] mb-6">{t.description}</p>
+
+                <div className="flex items-baseline gap-1 mb-6 pb-6 border-b border-border/60">
+                  <span className="text-4xl md:text-5xl font-black tracking-tight">E{t.price}</span>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  <p className="text-xs font-bold uppercase tracking-wider text-foreground/70">Includes</p>
+                  <ul className="space-y-3 text-sm text-muted-foreground">
+                    {t.perks.map((p) => (
+                      <li key={p} className="flex items-start gap-3">
+                        <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <span className="leading-snug">{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div className="text-4xl font-extrabold mt-2">E{t.price}</div>
-              <p className="text-xs text-muted-foreground mt-1">One-time · 30-day listing</p>
-              <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                {t.perks.map((p) => (
-                  <li key={p} className="flex gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" /><span>{p}</span></li>
-                ))}
-              </ul>
-              <div className="mt-6 inline-flex items-center justify-center w-full rounded-md bg-primary text-primary-foreground h-10 font-medium">
-                Select {t.name}
+
+              <div className={`w-full rounded-xl py-3 px-4 text-center font-semibold text-sm transition-all shadow-sm ${
+                t.highlight 
+                  ? "gradient-primary text-white shadow-primary/25" 
+                  : "bg-secondary text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground"
+              }`}>
+                {t.buttonText}
               </div>
             </button>
           ))}
@@ -215,8 +335,33 @@ const PostAdPage = () => {
         imageUrls.push(publicUrl);
       }
 
-      // Automatically fetch matching lat and lng based on selected location name
+      // If user selected the E500 tier, route to banners table for manual admin review
+      if (form.tier === "e500") {
+        const { error: bannerError } = await supabase.from("banners").insert({
+          title: form.title,
+          image_url: imageUrls[0] || "",
+          target_url: "#",
+          position: "home_top",
+          is_active: false, // Requires manual admin publication after payment approval
+        });
+
+        if (bannerError) throw bannerError;
+        setSubmittedTier(form.tier);
+        setSubmitted(true);
+        setSubmitting(false);
+        return;
+      }
+
+      // Calculate expiration date automatically based on the selected tier's duration
+      const selectedTierObj = TIERS.find((t) => t.id === form.tier)!;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + selectedTierObj.durationDays);
+
+      // For Free, E50, and E100 tiers, map database fields safely
       const coords = LOCATION_COORDS[form.location] || { lat: -26.3167, lng: 31.1333 };
+      const dbTier = mapTierToDatabaseEnum(form.tier);
+
+      const adStatus = "pending_payment";
 
       const { error } = await supabase.from("advertisements").insert({
         user_id: user.id,
@@ -228,11 +373,12 @@ const PostAdPage = () => {
         phone: form.phone,
         email: form.email,
         location: form.location,
-        lat: coords.lat,  // Saved to database automatically
-        lng: coords.lng,  // Saved to database automatically
+        lat: coords.lat,
+        lng: coords.lng,
         images: imageUrls,
-        status: "pending_payment",
-        tier: form.tier,
+        status: adStatus,
+        tier: dbTier,
+        expires_at: expiresAt.toISOString(), // Automatically tracks expiration for frontend/backend visibility filtering
       });
 
       if (error) throw error;
@@ -255,23 +401,29 @@ const PostAdPage = () => {
         <h2 className="text-2xl font-bold mb-4">Advertisement Submitted!</h2>
         <div className="bg-card border rounded-lg p-6 text-left space-y-4">
           <p className="text-muted-foreground">
-            Your advertisement request has been received and is awaiting payment confirmation.
+            {submittedTier === "free"
+              ? "Your free advertisement has been submitted successfully and is awaiting review."
+              : submittedTier === "e500"
+              ? "Your E500 spotlight banner request has been received and is awaiting payment confirmation. Once approved, the admin will manually post it to the banners section."
+              : "Your advertisement request has been received and is awaiting payment confirmation."}
           </p>
           <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Selected Plan</p>
             <p className="text-2xl font-bold text-primary">E{tierInfo.price} — {tierInfo.name}</p>
           </div>
-          <div className="bg-secondary/50 rounded-lg p-4">
-            <p className="font-semibold mb-2">To activate your listing:</p>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-              <li>Pay <strong>E{tierInfo.price}</strong> for your {tierInfo.name} listing</li>
-              <li>Send proof of payment via:</li>
-            </ol>
-            <div className="mt-3 space-y-1 text-sm">
-              <p><strong>WhatsApp:</strong> 76373859</p>
-              <p><strong>Email:</strong> themarkethub51@gmail.com</p>
+          {submittedTier !== "free" && (
+            <div className="bg-secondary/50 rounded-lg p-4">
+              <p className="font-semibold mb-2">To activate your listing:</p>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                <li>Pay <strong>E{tierInfo.price}</strong> for your {tierInfo.name} listing</li>
+                <li>Send proof of payment via:</li>
+              </ol>
+              <div className="mt-3 space-y-1 text-sm">
+                <p><strong>WhatsApp:</strong> 76373859</p>
+                <p><strong>Email:</strong> themarkethub51@gmail.com</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <Button className="mt-6 gradient-primary border-0" onClick={() => navigate("/")}>
           Back to Home

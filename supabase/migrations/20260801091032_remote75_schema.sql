@@ -1,0 +1,1 @@
+drop function if exists get_nearby_listings(double precision, double precision, double precision);

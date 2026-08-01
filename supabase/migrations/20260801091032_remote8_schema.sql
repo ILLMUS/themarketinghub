@@ -1,0 +1,2 @@
+ALTER TABLE public.subcategories
+ENABLE ROW LEVEL SECURITY;

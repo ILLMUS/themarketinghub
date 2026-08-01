@@ -1,0 +1,2 @@
+ALTER TABLE public.ad_positions
+ENABLE ROW LEVEL SECURITY;

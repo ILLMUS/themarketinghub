@@ -1,0 +1,2 @@
+ALTER TABLE public.ad_campaigns
+ENABLE ROW LEVEL SECURITY;
