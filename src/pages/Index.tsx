@@ -194,11 +194,16 @@ const DbBannerSlot = ({
   interval = 7000,
   arrows = false,
   fit = "cover",
+  mobileContain = false,
   fallback,
 }: {
   /* "contain" shows the WHOLE uploaded image (top to bottom, nothing
      cropped); "cover" fills the box and may crop. */
   fit?: "cover" | "contain";
+  /* When true, the image is switched to "contain" on mobile screens
+     (<= 767px) so EVERY part of the uploaded image is visible. A soft
+     blurred copy of the same image fills any empty space. */
+  mobileContain?: boolean;
   positions: string[];
   /* 0 / 1 splits the banner list between two slots so the same
      banner is never shown in both. */
@@ -283,7 +288,7 @@ const DbBannerSlot = ({
     <img
       src={image}
       alt={banner.title ?? banner.alt ?? "Banner"}
-      className={`block h-full w-full object-center ${
+      className={`market-banner-img block h-full w-full object-center ${
         fit === "contain" ? "object-contain" : "object-cover"
       }`}
     />
@@ -310,13 +315,25 @@ const DbBannerSlot = ({
 
   return (
     <div
+      data-mobile-contain={mobileContain ? "true" : "false"}
       className={`relative h-full w-full overflow-hidden rounded-[inherit] ${
         fit === "contain" ? "bg-white" : ""
       }`}
     >
+      {/* Blurred backdrop: only visible on mobile when the image is
+          letter-boxed, so the empty space looks intentional. */}
+      {mobileContain && (
+        <img
+          src={image}
+          alt=""
+          aria-hidden="true"
+          className="market-banner-backdrop"
+        />
+      )}
+
       <div
         key={banner.id ?? index}
-        className="market-banner-motion h-full w-full"
+        className="market-banner-motion relative z-[1] h-full w-full"
       >
         {content}
       </div>
@@ -346,7 +363,7 @@ const DbBannerSlot = ({
       )}
 
       {banners.length > 1 && (
-        <div className="pointer-events-none absolute bottom-1.5 left-0 right-0 flex justify-center gap-1">
+        <div className="pointer-events-none absolute bottom-1.5 left-0 right-0 z-[6] flex justify-center gap-1">
           {banners.map((_, i) => (
             <span
               key={i}
@@ -436,7 +453,10 @@ const FeaturedProductCard = ({
 };
 
 /* =========================================================
-   LARGE FEATURED OFFER (row 2)
+   LARGE FEATURED OFFER (row 2) — APPLE-STYLE CARD
+   The image sits in its own panel at the top. ALL the details
+   (badge, title, price, location, button) sit OUTSIDE the image,
+   underneath it, but still INSIDE the card.
 ========================================================= */
 
 const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
@@ -459,41 +479,55 @@ const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
     );
   }
 
+  const category = getCategoryName(ad);
+
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className="market-card market-bento group grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden p-2 sm:grid-cols-[1.25fr_1fr] sm:grid-rows-none"
+      className="market-card market-bento market-apple-card group flex h-full min-h-0 flex-col overflow-hidden p-2"
     >
-      <div className="market-image-container flex min-h-0 items-center justify-center overflow-hidden p-1 sm:p-2">
+      {/* IMAGE PANEL */}
+      <div className="market-image-container market-apple-image flex min-h-0 flex-1 items-center justify-center overflow-hidden p-1.5">
         {ad.images?.[0] ? (
           <img
             src={ad.images[0]}
             alt={ad.title}
-            className="market-image h-full w-full object-contain sm:max-h-[210px]"
+            className="market-image h-full w-full object-contain object-center"
           />
         ) : (
           <Package className="h-14 w-14 opacity-40" />
         )}
       </div>
 
-      <div className="flex min-w-0 flex-col justify-center p-3">
-        <span className="market-badge mb-2 w-fit">Featured</span>
+      {/* DETAILS — outside the image, inside the card */}
+      <div className="market-apple-details flex shrink-0 flex-col gap-2 px-1.5 pb-1 pt-2.5 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="market-badge">Featured</span>
 
-        <h3 className="line-clamp-3 text-sm font-bold leading-tight sm:text-base">
-          {ad.title}
-        </h3>
+            {category && (
+              <span className="truncate text-[9px] font-semibold uppercase tracking-wide opacity-70">
+                {category}
+              </span>
+            )}
+          </div>
 
-        <p className="mt-2 text-lg font-black">
-          E{Number(ad.price ?? 0).toLocaleString()}
-        </p>
+          <h3 className="line-clamp-2 text-sm font-bold leading-tight sm:text-base">
+            {ad.title}
+          </h3>
 
-        {ad.location && (
-          <p className="mt-1 truncate text-[10px] opacity-60">
-            {ad.location}
+          <p className="mt-1 text-lg font-black leading-none">
+            E{Number(ad.price ?? 0).toLocaleString()}
           </p>
-        )}
 
-        <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full border border-white/70 px-3 py-1.5 text-[10px] font-bold transition-all group-hover:bg-white group-hover:text-black">
+          {ad.location && (
+            <p className="mt-1 truncate text-[10px] opacity-70">
+              {ad.location}
+            </p>
+          )}
+        </div>
+
+        <span className="inline-flex w-fit shrink-0 items-center gap-1 rounded-full border border-white/70 px-3 py-1.5 text-[10px] font-bold transition-all group-hover:bg-white group-hover:text-black">
           View offer
 
           <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
@@ -912,6 +946,12 @@ const HomePage = () => {
           }
         }
 
+        /* Blurred backdrop is hidden on desktop and only used on
+           mobile when a banner is letter-boxed. */
+        .market-banner-backdrop {
+          display: none;
+        }
+
         /* ---------- ARROWS ---------- */
 
         .market-arrow {
@@ -944,7 +984,7 @@ const HomePage = () => {
         }
 
         /* =================================================
-           EXACT BENTO STRUCTURE  (UNCHANGED)
+           EXACT BENTO STRUCTURE
         ================================================= */
 
         .market-home-grid {
@@ -984,12 +1024,26 @@ const HomePage = () => {
           object-position: center center;
         }
 
+        /* Row 2: two large Apple-style cards (image on top, details below) */
         .market-vehicle-grid {
           grid-template-columns:
             minmax(0, 1fr)
             minmax(0, 1fr);
 
-          height: 260px;
+          height: 310px;
+        }
+
+        .market-apple-card {
+          min-width: 0;
+        }
+
+        .market-apple-image {
+          background: #ffffff;
+          border-radius: 12px;
+        }
+
+        .market-apple-details {
+          color: #ffffff;
         }
 
         .market-middle-grid {
@@ -1077,6 +1131,10 @@ const HomePage = () => {
             height: 230px;
           }
 
+          .market-vehicle-grid {
+            height: 320px;
+          }
+
           .market-main-grid {
             grid-template-columns:
               95px
@@ -1094,6 +1152,11 @@ const HomePage = () => {
 
         @media (max-width: 767px) {
 
+          /* ---------- MOBILE: TOP CENTER (HERO) BANNER ----------
+             The frame keeps a fixed 16:9 shape and the image is shown
+             with object-fit: contain, so EVERY part of the uploaded
+             image is visible. */
+
           .market-top-grid {
             grid-template-columns: 1fr 1fr;
 
@@ -1105,7 +1168,9 @@ const HomePage = () => {
 
             grid-row: 1;
 
-            height: 240px;
+            height: auto;
+
+            aspect-ratio: 16 / 9;
           }
 
           .market-top-grid > :nth-child(1),
@@ -1119,24 +1184,70 @@ const HomePage = () => {
             min-height: 230px;
           }
 
+          /* Banner frames: the banner fills the frame exactly */
+          .market-card.market-banner-frame > * {
+            position: absolute;
+            inset: 0;
+          }
+
+          [data-mobile-contain="true"] .market-banner-img {
+            object-fit: contain !important;
+            object-position: center center !important;
+          }
+
+          [data-mobile-contain="true"] .market-banner-backdrop {
+            display: block;
+
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: cover;
+
+            filter: blur(18px) saturate(1.1);
+
+            transform: scale(1.25);
+
+            opacity: 0.75;
+
+            pointer-events: none;
+          }
+
+          /* ---------- MOBILE: ROW 2 APPLE-STYLE CARDS ----------
+             Cards grow with their content: a big square image panel on
+             top, the details underneath it inside the card. */
+
           .market-vehicle-grid {
             grid-template-columns: 1fr;
 
             height: auto;
           }
 
-          /* Row 2 on mobile: substantially taller cards so uploaded product images are large. */
           .market-vehicle-grid > * {
-            height: 460px;
-            min-height: 460px;
+            height: auto !important;
+            min-height: 0 !important;
           }
 
-          .market-vehicle-grid .market-image-container {
-            min-height: 340px;
-            padding: 4px;
+          .market-vehicle-grid .market-apple-card {
+            height: auto !important;
           }
 
-          .market-vehicle-grid .market-image {
+          .market-vehicle-grid .market-apple-image {
+            flex: none;
+
+            width: 100%;
+
+            aspect-ratio: 1 / 1;
+
+            min-height: 0;
+
+            padding: 6px;
+          }
+
+          .market-vehicle-grid .market-apple-image .market-image {
             width: 100%;
             height: 100%;
             max-height: none !important;
@@ -1144,13 +1255,21 @@ const HomePage = () => {
             object-position: center center;
           }
 
+          /* ---------- MOBILE: MIDDLE PROMO BANNER ---------- */
+
           .market-middle-grid {
             grid-template-columns: 1fr;
 
             height: auto;
           }
 
-          .market-middle-grid > * {
+          .market-middle-grid > :nth-child(1) {
+            height: auto;
+
+            aspect-ratio: 2 / 1;
+          }
+
+          .market-middle-grid > :nth-child(2) {
             height: 220px;
           }
 
@@ -1215,15 +1334,6 @@ const HomePage = () => {
           .market-sidebar-banner {
             height: 260px;
             min-height: 260px;
-          }
-
-          .market-vehicle-grid > * {
-            height: 500px;
-            min-height: 500px;
-          }
-
-          .market-vehicle-grid .market-image-container {
-            min-height: 380px;
           }
 
           .market-main-grid {
@@ -1304,7 +1414,8 @@ const HomePage = () => {
       {/* ===================================================
           ROW 1 — SIDEBAR BANNER | HERO (TOP) BANNER | SIDEBAR BANNER
           All three are banners with the slide animation.
-          The centre hero reads "Home Page (Top Banner)".
+          The centre hero reads "Home Page (Top Banner)" and shows the
+          WHOLE image on mobile screens.
       =================================================== */}
 
       <section className="container mx-auto px-2 pt-3 sm:px-4">
@@ -1321,10 +1432,11 @@ const HomePage = () => {
           </div>
 
           {/* HERO — HOME PAGE (TOP BANNER) */}
-          <div className="market-card overflow-hidden p-0">
+          <div className="market-card market-banner-frame overflow-hidden p-0">
             <DbBannerSlot
               positions={TOP_BANNER_POSITIONS}
               interval={7500}
+              mobileContain
               fallback={<BannerSlider />}
             />
           </div>
@@ -1344,6 +1456,7 @@ const HomePage = () => {
 
       {/* ===================================================
           ROW 2 — FEATURED | FEATURED   (carousel slide animation)
+          Apple-style cards: image on top, details below it.
       =================================================== */}
 
       <section className="container mx-auto px-2 pt-2 sm:px-4">
@@ -1366,15 +1479,17 @@ const HomePage = () => {
 
       {/* ===================================================
           ROW 3 — HOME PAGE MIDDLE PROMO | FEATURED
+          The middle promo shows the WHOLE image on mobile screens.
       =================================================== */}
 
       <section className="container mx-auto px-2 pt-2 sm:px-4">
         <div className="market-home-grid market-middle-grid">
-          <div className="market-card overflow-hidden p-0">
+          <div className="market-card market-banner-frame overflow-hidden p-0">
             <DbBannerSlot
               positions={MIDDLE_BANNER_POSITIONS}
               interval={8000}
               arrows
+              mobileContain
               fallback={<AdBanner position="home_middle" />}
             />
           </div>
