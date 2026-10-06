@@ -193,8 +193,12 @@ const DbBannerSlot = ({
   parity,
   interval = 7000,
   arrows = false,
+  fit = "cover",
   fallback,
 }: {
+  /* "contain" shows the WHOLE uploaded image (top to bottom, nothing
+     cropped); "cover" fills the box and may crop. */
+  fit?: "cover" | "contain";
   positions: string[];
   /* 0 / 1 splits the banner list between two slots so the same
      banner is never shown in both. */
@@ -279,7 +283,9 @@ const DbBannerSlot = ({
     <img
       src={image}
       alt={banner.title ?? banner.alt ?? "Banner"}
-      className="h-full w-full object-cover"
+      className={`block h-full w-full object-center ${
+        fit === "contain" ? "object-contain" : "object-cover"
+      }`}
     />
   );
 
@@ -303,7 +309,11 @@ const DbBannerSlot = ({
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[inherit]">
+    <div
+      className={`relative h-full w-full overflow-hidden rounded-[inherit] ${
+        fit === "contain" ? "bg-white" : ""
+      }`}
+    >
       <div
         key={banner.id ?? index}
         className="market-banner-motion h-full w-full"
@@ -452,14 +462,14 @@ const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className="market-card market-bento group grid h-full min-h-0 grid-cols-1 overflow-hidden p-2 sm:grid-cols-[1.25fr_1fr]"
+      className="market-card market-bento group grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden p-2 sm:grid-cols-[1.25fr_1fr] sm:grid-rows-none"
     >
-      <div className="market-image-container flex min-h-0 items-center justify-center overflow-hidden p-2">
+      <div className="market-image-container flex min-h-0 items-center justify-center overflow-hidden p-1 sm:p-2">
         {ad.images?.[0] ? (
           <img
             src={ad.images[0]}
             alt={ad.title}
-            className="market-image h-full max-h-[210px] w-full object-contain"
+            className="market-image h-full w-full object-contain sm:max-h-[210px]"
           />
         ) : (
           <Package className="h-14 w-14 opacity-40" />
@@ -949,7 +959,29 @@ const HomePage = () => {
             minmax(0, 1fr)
             190px;
 
-          height: 230px;
+          height: 250px;
+        }
+
+        /* Admin-uploaded sidebar banners: always show the complete image. */
+        .market-sidebar-banner {
+          min-width: 0;
+          min-height: 0;
+          background: rgba(255, 255, 255, 0.96);
+        }
+
+        .market-sidebar-banner > div {
+          width: 100%;
+          height: 100%;
+        }
+
+        .market-sidebar-banner img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain !important;
+          object-position: center center;
         }
 
         .market-vehicle-grid {
@@ -957,7 +989,7 @@ const HomePage = () => {
             minmax(0, 1fr)
             minmax(0, 1fr);
 
-          height: 230px;
+          height: 260px;
         }
 
         .market-middle-grid {
@@ -1042,7 +1074,7 @@ const HomePage = () => {
               minmax(0, 1fr)
               150px;
 
-            height: 215px;
+            height: 230px;
           }
 
           .market-main-grid {
@@ -1073,12 +1105,18 @@ const HomePage = () => {
 
             grid-row: 1;
 
-            height: 220px;
+            height: 240px;
           }
 
           .market-top-grid > :nth-child(1),
           .market-top-grid > :nth-child(3) {
-            height: 180px;
+            height: 230px;
+            min-height: 230px;
+          }
+
+          .market-sidebar-banner {
+            height: 230px;
+            min-height: 230px;
           }
 
           .market-vehicle-grid {
@@ -1087,8 +1125,23 @@ const HomePage = () => {
             height: auto;
           }
 
+          /* Row 2 on mobile: substantially taller cards so uploaded product images are large. */
           .market-vehicle-grid > * {
-            height: 220px;
+            height: 460px;
+            min-height: 460px;
+          }
+
+          .market-vehicle-grid .market-image-container {
+            min-height: 340px;
+            padding: 4px;
+          }
+
+          .market-vehicle-grid .market-image {
+            width: 100%;
+            height: 100%;
+            max-height: none !important;
+            object-fit: contain;
+            object-position: center center;
           }
 
           .market-middle-grid {
@@ -1157,6 +1210,20 @@ const HomePage = () => {
           .market-top-grid > :nth-child(3) {
             grid-column: 1;
             grid-row: 3;
+          }
+
+          .market-sidebar-banner {
+            height: 260px;
+            min-height: 260px;
+          }
+
+          .market-vehicle-grid > * {
+            height: 500px;
+            min-height: 500px;
+          }
+
+          .market-vehicle-grid .market-image-container {
+            min-height: 380px;
           }
 
           .market-main-grid {
@@ -1243,10 +1310,11 @@ const HomePage = () => {
       <section className="container mx-auto px-2 pt-3 sm:px-4">
         <div className="market-home-grid market-top-grid">
           {/* LEFT SIDEBAR BANNER */}
-          <div className="market-card overflow-hidden p-0">
+          <div className="market-card market-sidebar-banner overflow-hidden p-0">
             <DbBannerSlot
               positions={SIDEBAR_BANNER_POSITIONS}
               parity={0}
+              fit="contain"
               interval={6500}
               fallback={<SidebarBanner />}
             />
@@ -1262,10 +1330,11 @@ const HomePage = () => {
           </div>
 
           {/* RIGHT SIDEBAR BANNER */}
-          <div className="market-card overflow-hidden p-0">
+          <div className="market-card market-sidebar-banner overflow-hidden p-0">
             <DbBannerSlot
               positions={SIDEBAR_BANNER_POSITIONS}
               parity={1}
+              fit="contain"
               interval={7000}
               fallback={<SidebarBanner />}
             />
@@ -1477,10 +1546,11 @@ const HomePage = () => {
               </SlotMotion>
             </div>
 
-            <div className="market-card overflow-hidden p-0">
+            <div className="market-card market-sidebar-banner overflow-hidden p-0">
               <DbBannerSlot
                 positions={SIDEBAR_BANNER_POSITIONS}
                 interval={7600}
+                fit="contain"
                 fallback={<SidebarBanner />}
               />
             </div>
