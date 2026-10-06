@@ -1,16 +1,23 @@
-
-
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   MARKET HUB
+   Visual Direction:
+   White / Blue / Gold / Navy
+   Soft ambient gradient background
+   Clean white cards with elevation
+   ========================================================= */
+
 @layer base {
   :root {
-    --background: 210 20% 98%;
+    --background: 220 30% 98%;
     --foreground: 220 30% 10%;
 
+    /* KEEP EXISTING CARD APPEARANCE */
     --card: 0 0% 100%;
     --card-foreground: 220 30% 10%;
 
@@ -49,6 +56,7 @@
 
     --success: 142 72% 42%;
     --success-foreground: 0 0% 100%;
+
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
   }
@@ -56,23 +64,32 @@
   .dark {
     --background: 220 30% 6%;
     --foreground: 220 10% 95%;
+
     --card: 220 25% 10%;
     --card-foreground: 220 10% 95%;
+
     --popover: 220 25% 10%;
     --popover-foreground: 220 10% 95%;
+
     --primary: 220 80% 60%;
     --primary-foreground: 0 0% 100%;
+
     --secondary: 220 25% 15%;
     --secondary-foreground: 220 10% 90%;
+
     --muted: 220 20% 15%;
     --muted-foreground: 220 10% 55%;
+
     --accent: 38 92% 50%;
     --accent-foreground: 0 0% 100%;
+
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
+
     --border: 220 20% 18%;
     --input: 220 20% 18%;
     --ring: 220 80% 60%;
+
     --sidebar-background: 220 30% 6%;
     --sidebar-foreground: 220 10% 90%;
     --sidebar-primary: 220 80% 60%;
@@ -84,34 +101,396 @@
   }
 }
 
+/* =========================================================
+   GLOBAL BASE
+   ========================================================= */
+
 @layer base {
+
   * {
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground font-body antialiased;
+  html {
+    min-height: 100%;
+    background: #f7faff;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  body {
+
+    margin: 0;
+
+    min-height: 100vh;
+
+    /*
+      =======================================================
+      MAIN SITE BACKGROUND
+
+      This is intentionally NOT a hard three-color gradient.
+
+      The reference uses soft ambient lighting:
+      white base + blue glow + gold glow + navy depth.
+
+      This keeps the site clean while allowing the brand
+      colors to exist throughout the entire page.
+      =======================================================
+    */
+
+    background:
+
+      /* Blue glow — upper left */
+      radial-gradient(
+        circle at 5% 8%,
+        rgba(0, 91, 255, 0.18) 0%,
+        rgba(0, 91, 255, 0.10) 18%,
+        transparent 38%
+      ),
+
+      /* Gold glow — upper right */
+      radial-gradient(
+        circle at 94% 12%,
+        rgba(245, 184, 45, 0.22) 0%,
+        rgba(245, 184, 45, 0.10) 20%,
+        transparent 38%
+      ),
+
+      /* Navy / blue glow — center */
+      radial-gradient(
+        circle at 50% 45%,
+        rgba(17, 74, 165, 0.10) 0%,
+        transparent 42%
+      ),
+
+      /* Gold glow — lower left */
+      radial-gradient(
+        circle at 10% 90%,
+        rgba(245, 184, 45, 0.18) 0%,
+        transparent 35%
+      ),
+
+      /* Blue glow — lower right */
+      radial-gradient(
+        circle at 92% 82%,
+        rgba(0, 91, 255, 0.15) 0%,
+        transparent 35%
+      ),
+
+      /*
+        Final soft base.
+
+        Navy is subtle here.
+        It should be felt rather than dominate.
+      */
+      linear-gradient(
+        135deg,
+        #f8fbff 0%,
+        #f1f6ff 35%,
+        #f8f8f6 65%,
+        #fffaf0 100%
+      );
+
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
+
+    color: hsl(var(--foreground));
+
+    @apply font-body antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading font-bold tracking-tight;
   }
 }
 
+
+/* =========================================================
+   CARD SHADOW SYSTEM
+   ========================================================= */
+
+@layer components {
+
+  /*
+    Main card shadow.
+
+    Cards remain WHITE.
+    We are only adding elevation.
+  */
+
+  .card,
+  [class*="bg-card"] {
+
+    box-shadow:
+      0 10px 25px rgba(11, 37, 75, 0.10),
+      0 3px 8px rgba(11, 37, 75, 0.06);
+
+  }
+
+  /*
+    Slightly stronger hover elevation.
+  */
+
+  .card:hover,
+  [class*="bg-card"]:hover {
+
+    box-shadow:
+      0 16px 32px rgba(11, 37, 75, 0.14),
+      0 5px 12px rgba(11, 37, 75, 0.08);
+
+  }
+
+  /*
+    Popovers / dropdowns.
+  */
+
+  [class*="bg-popover"] {
+
+    box-shadow:
+      0 16px 35px rgba(8, 28, 65, 0.16),
+      0 4px 10px rgba(8, 28, 65, 0.08);
+
+  }
+}
+
+
+/* =========================================================
+   GRADIENT UTILITIES
+   ========================================================= */
+
 @layer utilities {
+
+  /*
+    BLUE PRIMARY
+  */
+
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(220 80% 50%), hsl(220 90% 62%));
+
+    background:
+      linear-gradient(
+        135deg,
+        hsl(220 80% 50%),
+        hsl(220 90% 62%)
+      );
+
   }
+
+
+  /*
+    NAVY + BLUE HERO
+  */
+
   .gradient-hero {
-    background: linear-gradient(135deg, hsl(220 30% 8%), hsl(220 40% 18%));
+
+    background:
+
+      radial-gradient(
+        circle at 75% 25%,
+        rgba(0, 115, 255, 0.28),
+        transparent 42%
+      ),
+
+      radial-gradient(
+        circle at 25% 80%,
+        rgba(245, 184, 45, 0.16),
+        transparent 38%
+      ),
+
+      linear-gradient(
+        135deg,
+        #061126 0%,
+        #09295a 55%,
+        #071a38 100%
+      );
+
   }
+
+
+  /*
+    GOLD ACCENT
+  */
+
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(38 92% 50%), hsl(28 95% 55%));
+
+    background:
+      linear-gradient(
+        135deg,
+        hsl(38 92% 50%),
+        hsl(28 95% 55%)
+      );
+
   }
+
+
+  /*
+    BLUE → GOLD TEXT
+  */
+
   .text-gradient {
-    background: linear-gradient(135deg, hsl(220 80% 50%), hsl(220 90% 70%));
+
+    background:
+
+      linear-gradient(
+        135deg,
+        #0757d9 0%,
+        #1678e8 45%,
+        #d99a16 100%
+      );
+
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+
   }
+
+
+  /*
+    SOFT MARKET HUB BACKGROUND
+
+    Useful for individual large sections if required.
+  */
+
+  .market-background {
+
+    background:
+
+      radial-gradient(
+        circle at 10% 10%,
+        rgba(0, 91, 255, 0.14),
+        transparent 35%
+      ),
+
+      radial-gradient(
+        circle at 90% 20%,
+        rgba(245, 184, 45, 0.17),
+        transparent 35%
+      ),
+
+      radial-gradient(
+        circle at 50% 100%,
+        rgba(10, 54, 130, 0.12),
+        transparent 40%
+      ),
+
+      linear-gradient(
+        135deg,
+        #f8fbff,
+        #f1f6ff 50%,
+        #fffaf0
+      );
+
+  }
+
+
+  /*
+    PREMIUM GOLD / BLUE BORDER
+
+    Does not alter the card's white interior.
+  */
+
+  .market-border {
+
+    border:
+
+      1px solid
+      rgba(19, 79, 160, 0.16);
+
+  }
+
+
+  /*
+    MARKET HUB ELEVATION
+
+    Use this on cards where stronger depth is wanted.
+  */
+
+  .shadow-market {
+
+    box-shadow:
+
+      0 12px 30px
+      rgba(8, 35, 75, 0.12),
+
+      0 4px 10px
+      rgba(8, 35, 75, 0.07);
+
+  }
+
+
+  /*
+    GOLD HIGHLIGHT SHADOW
+
+    Very subtle — prevents the gold from becoming excessive.
+  */
+
+  .shadow-gold {
+
+    box-shadow:
+
+      0 12px 30px
+      rgba(8, 35, 75, 0.10),
+
+      0 0 22px
+      rgba(245, 184, 45, 0.10);
+
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  body {
+
+    background-attachment: scroll;
+
+    background:
+
+      radial-gradient(
+        circle at 10% 8%,
+        rgba(0, 91, 255, 0.14),
+        transparent 38%
+      ),
+
+      radial-gradient(
+        circle at 90% 12%,
+        rgba(245, 184, 45, 0.17),
+        transparent 38%
+      ),
+
+      radial-gradient(
+        circle at 50% 95%,
+        rgba(15, 65, 145, 0.10),
+        transparent 40%
+      ),
+
+      linear-gradient(
+        135deg,
+        #f8fbff,
+        #f3f7ff 55%,
+        #fffaf0
+      );
+
+  }
+
+  /*
+    Slightly softer shadows on smaller screens.
+  */
+
+  .card,
+  [class*="bg-card"] {
+
+    box-shadow:
+      0 7px 18px rgba(11, 37, 75, 0.10),
+      0 2px 6px rgba(11, 37, 75, 0.05);
+
+  }
+
 }
