@@ -94,6 +94,45 @@ const SIDEBAR_BANNER_POSITIONS = [
 ];
 
 /* =========================================================
+   SHAPES  (corner radius system)
+
+   Every banner and card has ONE big corner and THREE small
+   corners. The size of the radii follows the size of the box:
+
+   size tier   big / small    used by
+   ---------   -----------    -------------------------------
+   r-xl        60px / 30px    hero banner, middle promo, large
+                              featured cards
+   r-lg        48px / 24px    sidebar banners, carousel panel
+   r-md        36px / 18px    product cards, buy box
+   r-sm        28px / 14px    mini cards
+   r-strip     30px / 15px    72px-high standard list cards and
+                              the small side banner
+
+   Smaller screens shrink the tiers automatically (see CSS).
+
+   corner-tl / corner-tr / corner-br / corner-bl choose WHICH
+   corner is the big one.
+========================================================= */
+
+const SHAPE = {
+  HERO: "r-xl corner-tl",
+  MIDDLE: "r-xl corner-tl",
+  ROW2_LEFT: "r-xl corner-tr",
+  ROW2_RIGHT: "r-xl corner-tl",
+  SIDE_LEFT: "r-lg corner-tr",
+  SIDE_RIGHT: "r-lg corner-tl",
+  SIDE_SMALL: "r-strip corner-tl",
+  PRODUCT: "r-md corner-tr",
+  STRIP: "r-strip corner-tr",
+  BUY: "r-md corner-tr",
+  CAROUSEL: "r-md corner-br",
+  MINI_LEFT: "r-sm corner-tr",
+  MINI_RIGHT: "r-sm corner-tl",
+  STANDARD: "r-md corner-tr",
+} as const;
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
@@ -201,7 +240,7 @@ const DbBannerSlot = ({
      cropped); "cover" fills the box and may crop. */
   fit?: "cover" | "contain";
   /* When true, the image is switched to "contain" on mobile screens
-     (<= 767px) so EVERY part of the uploaded image is visible. A soft
+     (<= 899px) so EVERY part of the uploaded image is visible. A soft
      blurred copy of the same image fills any empty space. */
   mobileContain?: boolean;
   positions: string[];
@@ -385,15 +424,17 @@ const DbBannerSlot = ({
 const FeaturedProductCard = ({
   ad,
   compact = false,
+  shape = SHAPE.PRODUCT,
 }: {
   ad?: Advertisement;
   compact?: boolean;
+  shape?: string;
 }) => {
   if (!ad) {
     return (
       <Link
         to="/marketplace"
-        className="market-card market-bento flex h-full min-h-0 items-center justify-center p-4 text-center"
+        className={`market-card market-bento ${shape} flex h-full min-h-0 items-center justify-center p-4 text-center`}
       >
         <div>
           <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
@@ -413,7 +454,7 @@ const FeaturedProductCard = ({
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className={`market-card market-bento group flex h-full min-h-0 flex-col overflow-hidden p-1.5 ${
+      className={`market-card market-bento ${shape} group flex h-full min-h-0 flex-col overflow-hidden p-1.5 ${
         compact ? "market-product-compact" : ""
       }`}
     >
@@ -457,14 +498,26 @@ const FeaturedProductCard = ({
    The image sits in its own panel at the top. ALL the details
    (badge, title, price, location, button) sit OUTSIDE the image,
    underneath it, but still INSIDE the card.
+
+   On tablet / mobile the two cards sit side by side and the
+   right-hand card is a mirror of the left one (text on the
+   right, button on the left) - see the `mirror` prop.
 ========================================================= */
 
-const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
+const LargeFeaturedOffer = ({
+  ad,
+  shape = SHAPE.ROW2_LEFT,
+  mirror = false,
+}: {
+  ad?: Advertisement;
+  shape?: string;
+  mirror?: boolean;
+}) => {
   if (!ad) {
     return (
       <Link
         to="/marketplace"
-        className="market-card market-bento flex h-full min-h-0 items-center justify-center"
+        className={`market-card market-bento ${shape} flex h-full min-h-0 items-center justify-center`}
       >
         <div className="text-center">
           <Package className="mx-auto mb-2 h-10 w-10 opacity-50" />
@@ -484,7 +537,9 @@ const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className="market-card market-bento market-apple-card group flex h-full min-h-0 flex-col overflow-hidden p-2"
+      className={`market-card market-bento market-apple-card ${shape} ${
+        mirror ? "market-mirror" : ""
+      } group flex h-full min-h-0 flex-col overflow-hidden p-2`}
     >
       {/* IMAGE PANEL */}
       <div className="market-image-container market-apple-image flex min-h-0 flex-1 items-center justify-center overflow-hidden p-1.5">
@@ -500,9 +555,9 @@ const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
       </div>
 
       {/* DETAILS — outside the image, inside the card */}
-      <div className="market-apple-details flex shrink-0 flex-col gap-2 px-1.5 pb-1 pt-2.5 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
-        <div className="min-w-0">
-          <div className="mb-1 flex items-center gap-2">
+      <div className="market-apple-details flex shrink-0 items-end justify-between gap-2 px-1.5 pb-1 pt-2.5 sm:gap-3">
+        <div className="market-apple-text min-w-0">
+          <div className="market-apple-meta mb-1 flex items-center gap-2">
             <span className="market-badge">Featured</span>
 
             {category && (
@@ -512,23 +567,25 @@ const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
             )}
           </div>
 
-          <h3 className="line-clamp-2 text-sm font-bold leading-tight sm:text-base">
+          <h3 className="line-clamp-2 text-[11px] font-bold leading-tight sm:text-sm lg:text-base">
             {ad.title}
           </h3>
 
-          <p className="mt-1 text-lg font-black leading-none">
+          <p className="mt-1 text-sm font-black leading-none sm:text-base lg:text-lg">
             E{Number(ad.price ?? 0).toLocaleString()}
           </p>
 
           {ad.location && (
-            <p className="mt-1 truncate text-[10px] opacity-70">
-              {ad.location}
+            <p className="market-apple-location mt-1 flex items-center gap-0.5 text-[9px] opacity-70 sm:text-[10px]">
+              <MapPin className="h-2.5 w-2.5 shrink-0" />
+
+              <span className="truncate">{ad.location}</span>
             </p>
           )}
         </div>
 
-        <span className="inline-flex w-fit shrink-0 items-center gap-1 rounded-full border border-white/70 px-3 py-1.5 text-[10px] font-bold transition-all group-hover:bg-white group-hover:text-black">
-          View offer
+        <span className="market-offer-btn inline-flex shrink-0 items-center gap-1 rounded-full border border-white/70 px-3 py-1.5 text-[10px] font-bold transition-all group-hover:bg-white group-hover:text-black">
+          <span className="market-offer-label">View offer</span>
 
           <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
         </span>
@@ -541,12 +598,18 @@ const LargeFeaturedOffer = ({ ad }: { ad?: Advertisement }) => {
    FEATURED MINI CARD (right sidebar)
 ========================================================= */
 
-const FeaturedMiniCard = ({ ad }: { ad?: Advertisement }) => {
+const FeaturedMiniCard = ({
+  ad,
+  shape = SHAPE.MINI_LEFT,
+}: {
+  ad?: Advertisement;
+  shape?: string;
+}) => {
   if (!ad) {
     return (
       <Link
         to="/marketplace"
-        className="market-card market-bento flex h-full min-h-0 items-center justify-center p-2 text-center"
+        className={`market-card market-bento ${shape} flex h-full min-h-0 items-center justify-center p-2 text-center`}
       >
         <div>
           <Package className="mx-auto mb-1 h-6 w-6 opacity-50" />
@@ -560,7 +623,7 @@ const FeaturedMiniCard = ({ ad }: { ad?: Advertisement }) => {
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className="market-card market-bento group flex h-full min-h-0 flex-col overflow-hidden p-1.5"
+      className={`market-card market-bento ${shape} group flex h-full min-h-0 flex-col overflow-hidden p-1.5`}
     >
       <div className="market-image-container flex min-h-0 flex-1 items-center justify-center overflow-hidden">
         {ad.images?.[0] ? (
@@ -591,13 +654,19 @@ const FeaturedMiniCard = ({ ad }: { ad?: Advertisement }) => {
    STANDARD LIST STRIP CARD (row 4)
 ========================================================= */
 
-const ProductStripCard = ({ ad }: { ad: Advertisement }) => (
+const ProductStripCard = ({
+  ad,
+  shape = SHAPE.STRIP,
+}: {
+  ad: Advertisement;
+  shape?: string;
+}) => (
   <Link
     to={`/ad/${ad.id}`}
-    className="market-card market-bento group flex h-full min-w-0 overflow-hidden p-1.5"
+    className={`market-card market-bento ${shape} group flex h-full min-w-0 overflow-hidden p-1.5`}
   >
     <div className="flex h-full min-w-0 items-center gap-2">
-      <div className="market-image-container flex h-full w-[58px] shrink-0 items-center justify-center overflow-hidden">
+      <div className="market-image-container market-thumb flex h-full w-[58px] shrink-0 items-center justify-center overflow-hidden">
         {ad.images?.[0] ? (
           <img
             src={ad.images[0]}
@@ -781,10 +850,28 @@ const HomePage = () => {
           overflow-x: hidden;
         }
 
+        /* =================================================
+           SHAPES — ONE BIG CORNER + THREE SMALL CORNERS
+
+           --r-b  = the big corner radius
+           --r-s  = the three small corner radii
+           --tl / --tr / --br / --bl = the final radius of
+           each corner (children use these to stay concentric
+           with the card they sit in).
+        ================================================= */
+
         .market-card {
+          --r-b: 36px;
+          --r-s: 18px;
+
+          --tl: var(--r-s);
+          --tr: var(--r-b);
+          --br: var(--r-s);
+          --bl: var(--r-s);
+
           position: relative;
 
-          border-radius: 9px;
+          border-radius: var(--tl) var(--tr) var(--br) var(--bl);
 
           border: 1px solid rgba(255, 255, 255, 0.75);
 
@@ -813,6 +900,19 @@ const HomePage = () => {
             transform 300ms ease,
             box-shadow 300ms ease;
         }
+
+        /* WHICH corner is the big one */
+        .market-card.corner-tl { --tl: var(--r-b); --tr: var(--r-s); --br: var(--r-s); --bl: var(--r-s); }
+        .market-card.corner-tr { --tl: var(--r-s); --tr: var(--r-b); --br: var(--r-s); --bl: var(--r-s); }
+        .market-card.corner-br { --tl: var(--r-s); --tr: var(--r-s); --br: var(--r-b); --bl: var(--r-s); }
+        .market-card.corner-bl { --tl: var(--r-s); --tr: var(--r-s); --br: var(--r-s); --bl: var(--r-b); }
+
+        /* HOW BIG the radii are, by box size */
+        .market-card.r-xl    { --r-b: 60px; --r-s: 30px; }
+        .market-card.r-lg    { --r-b: 48px; --r-s: 24px; }
+        .market-card.r-md    { --r-b: 36px; --r-s: 18px; }
+        .market-card.r-sm    { --r-b: 28px; --r-s: 14px; }
+        .market-card.r-strip { --r-b: 30px; --r-s: 15px; }
 
         .market-card::before {
           content: "";
@@ -864,8 +964,14 @@ const HomePage = () => {
           100% { background-position: 0% 50%; }
         }
 
+        /* Image panels follow the card's own corners (concentric),
+           so the inner panel curves exactly like the card. */
         .market-image-container {
-          border-radius: 6px;
+          border-radius:
+            max(6px, calc(var(--tl, 12px) - 6px))
+            max(6px, calc(var(--tr, 12px) - 6px))
+            max(6px, calc(var(--br, 12px) - 6px))
+            max(6px, calc(var(--bl, 12px) - 6px));
 
           background:
             radial-gradient(
@@ -878,6 +984,11 @@ const HomePage = () => {
           box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7);
 
           overflow: hidden;
+        }
+
+        /* Small thumbnail inside the strip cards */
+        .market-image-container.market-thumb {
+          border-radius: 12px;
         }
 
         .market-image {
@@ -984,7 +1095,7 @@ const HomePage = () => {
         }
 
         /* =================================================
-           EXACT BENTO STRUCTURE
+           EXACT BENTO STRUCTURE (DESKTOP)
         ================================================= */
 
         .market-home-grid {
@@ -1037,9 +1148,15 @@ const HomePage = () => {
           min-width: 0;
         }
 
+        /* Top corners follow the card, bottom corners stay soft. */
         .market-apple-image {
           background: #ffffff;
-          border-radius: 12px;
+
+          border-radius:
+            max(10px, calc(var(--tl, 12px) - 8px))
+            max(10px, calc(var(--tr, 12px) - 8px))
+            max(14px, calc(var(--r-s, 18px) - 6px))
+            max(14px, calc(var(--r-s, 18px) - 6px));
         }
 
         .market-apple-details {
@@ -1107,11 +1224,12 @@ const HomePage = () => {
           min-height: 0;
         }
 
+        /* Cards inside the featured carousel panel */
         .market-featured-listing {
           min-width: 0;
           min-height: 0;
 
-          border-radius: 6px;
+          border-radius: max(8px, calc(var(--r-s, 18px) - 4px));
 
           overflow: hidden;
         }
@@ -1119,6 +1237,10 @@ const HomePage = () => {
         .market-featured-listing > * {
           height: 100%;
         }
+
+        /* =================================================
+           LARGE TABLETS
+        ================================================= */
 
         @media (max-width: 1023px) {
 
@@ -1150,12 +1272,18 @@ const HomePage = () => {
           }
         }
 
-        @media (max-width: 767px) {
+        /* =================================================
+           SMALLER TABLETS + MOBILE  (<= 899px)
+           Layout copied from the wireframe:
 
-          /* ---------- MOBILE: TOP CENTER (HERO) BANNER ----------
-             The frame keeps a fixed 16:9 shape and the image is shown
-             with object-fit: contain, so EVERY part of the uploaded
-             image is visible. */
+             [      HERO / TOP BANNER      ]
+             [ SIDE BANNER ][ SIDE BANNER ]
+             [ FEATURED    ][    FEATURED ]   <- right one mirrored
+        ================================================= */
+
+        @media (max-width: 899px) {
+
+          /* ---------- ROW 1 ---------- */
 
           .market-top-grid {
             grid-template-columns: 1fr 1fr;
@@ -1175,13 +1303,17 @@ const HomePage = () => {
 
           .market-top-grid > :nth-child(1),
           .market-top-grid > :nth-child(3) {
-            height: 230px;
-            min-height: 230px;
+            grid-row: 2;
+
+            height: auto;
+            min-height: 0;
+
+            aspect-ratio: 4 / 3;
           }
 
           .market-sidebar-banner {
-            height: 230px;
-            min-height: 230px;
+            height: auto;
+            min-height: 0;
           }
 
           /* Banner frames: the banner fills the frame exactly */
@@ -1216,12 +1348,10 @@ const HomePage = () => {
             pointer-events: none;
           }
 
-          /* ---------- MOBILE: ROW 2 APPLE-STYLE CARDS ----------
-             Cards grow with their content: a big square image panel on
-             top, the details underneath it inside the card. */
+          /* ---------- ROW 2: TWO CARDS SIDE BY SIDE ---------- */
 
           .market-vehicle-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr 1fr;
 
             height: auto;
           }
@@ -1233,6 +1363,8 @@ const HomePage = () => {
 
           .market-vehicle-grid .market-apple-card {
             height: auto !important;
+
+            padding: 6px;
           }
 
           .market-vehicle-grid .market-apple-image {
@@ -1240,11 +1372,12 @@ const HomePage = () => {
 
             width: 100%;
 
-            aspect-ratio: 1 / 1;
+            /* Bigger = taller image panel, smaller = shorter. */
+            aspect-ratio: 4 / 3;
 
             min-height: 0;
 
-            padding: 6px;
+            padding: 4px;
           }
 
           .market-vehicle-grid .market-apple-image .market-image {
@@ -1254,6 +1387,54 @@ const HomePage = () => {
             object-fit: contain;
             object-position: center center;
           }
+
+          .market-apple-details {
+            padding-top: 8px;
+          }
+
+          /* The "View offer" pill becomes a round arrow button */
+          .market-offer-label {
+            display: none;
+          }
+
+          .market-offer-btn {
+            width: 28px;
+            height: 28px;
+
+            padding: 0;
+
+            justify-content: center;
+          }
+
+          /* Right-hand card = mirror of the left-hand card */
+          .market-mirror .market-apple-details {
+            flex-direction: row-reverse;
+
+            text-align: right;
+          }
+
+          .market-mirror .market-apple-meta {
+            flex-direction: row-reverse;
+          }
+
+          .market-mirror .market-apple-location {
+            flex-direction: row-reverse;
+          }
+
+          .market-mirror .market-offer-btn {
+            transform: scaleX(-1);
+          }
+
+          /* Radii shrink a little with the smaller boxes */
+          .market-card.r-xl { --r-b: 52px; --r-s: 26px; }
+          .market-card.r-lg { --r-b: 46px; --r-s: 23px; }
+        }
+
+        /* =================================================
+           MOBILE  (<= 767px)
+        ================================================= */
+
+        @media (max-width: 767px) {
 
           /* ---------- MOBILE: MIDDLE PROMO BANNER ---------- */
 
@@ -1310,31 +1491,26 @@ const HomePage = () => {
           }
         }
 
-        @media (max-width: 480px) {
+        /* =================================================
+           PHONES  (<= 599px)
+           The two banner cards become squares like the wireframe
+           and the radii tighten for the narrower boxes.
+        ================================================= */
 
-          .market-top-grid {
-            grid-template-columns: 1fr;
-          }
+        @media (max-width: 599px) {
 
-          .market-top-grid > :nth-child(2) {
-            grid-column: 1;
-            grid-row: 1;
-          }
-
-          .market-top-grid > :nth-child(1) {
-            grid-column: 1;
-            grid-row: 2;
-          }
-
+          .market-top-grid > :nth-child(1),
           .market-top-grid > :nth-child(3) {
-            grid-column: 1;
-            grid-row: 3;
+            aspect-ratio: 1 / 1;
           }
 
-          .market-sidebar-banner {
-            height: 260px;
-            min-height: 260px;
-          }
+          .market-card.r-xl { --r-b: 44px; --r-s: 22px; }
+          .market-card.r-lg { --r-b: 40px; --r-s: 20px; }
+          .market-card.r-md { --r-b: 30px; --r-s: 15px; }
+          .market-card.r-sm { --r-b: 24px; --r-s: 12px; }
+        }
+
+        @media (max-width: 480px) {
 
           .market-main-grid {
             grid-template-columns: 1fr;
@@ -1413,15 +1589,17 @@ const HomePage = () => {
 
       {/* ===================================================
           ROW 1 — SIDEBAR BANNER | HERO (TOP) BANNER | SIDEBAR BANNER
-          All three are banners with the slide animation.
-          The centre hero reads "Home Page (Top Banner)" and shows the
-          WHOLE image on mobile screens.
+          Desktop: three across.
+          Tablet / mobile: hero on top, the two sidebar banners
+          side by side underneath (wireframe layout).
       =================================================== */}
 
       <section className="container mx-auto px-2 pt-3 sm:px-4">
         <div className="market-home-grid market-top-grid">
           {/* LEFT SIDEBAR BANNER */}
-          <div className="market-card market-sidebar-banner overflow-hidden p-0">
+          <div
+            className={`market-card market-banner-frame market-sidebar-banner ${SHAPE.SIDE_LEFT} overflow-hidden p-0`}
+          >
             <DbBannerSlot
               positions={SIDEBAR_BANNER_POSITIONS}
               parity={0}
@@ -1432,7 +1610,9 @@ const HomePage = () => {
           </div>
 
           {/* HERO — HOME PAGE (TOP BANNER) */}
-          <div className="market-card market-banner-frame overflow-hidden p-0">
+          <div
+            className={`market-card market-banner-frame ${SHAPE.HERO} overflow-hidden p-0`}
+          >
             <DbBannerSlot
               positions={TOP_BANNER_POSITIONS}
               interval={7500}
@@ -1442,7 +1622,9 @@ const HomePage = () => {
           </div>
 
           {/* RIGHT SIDEBAR BANNER */}
-          <div className="market-card market-sidebar-banner overflow-hidden p-0">
+          <div
+            className={`market-card market-banner-frame market-sidebar-banner ${SHAPE.SIDE_RIGHT} overflow-hidden p-0`}
+          >
             <DbBannerSlot
               positions={SIDEBAR_BANNER_POSITIONS}
               parity={1}
@@ -1457,6 +1639,8 @@ const HomePage = () => {
       {/* ===================================================
           ROW 2 — FEATURED | FEATURED   (carousel slide animation)
           Apple-style cards: image on top, details below it.
+          The right-hand card is a mirror of the left on tablet
+          and mobile.
       =================================================== */}
 
       <section className="container mx-auto px-2 pt-2 sm:px-4">
@@ -1465,14 +1649,21 @@ const HomePage = () => {
             slot={SLOT.ROW2_LEFT}
             id={adForSlot(SLOT.ROW2_LEFT)?.id}
           >
-            <LargeFeaturedOffer ad={adForSlot(SLOT.ROW2_LEFT)} />
+            <LargeFeaturedOffer
+              ad={adForSlot(SLOT.ROW2_LEFT)}
+              shape={SHAPE.ROW2_LEFT}
+            />
           </SlotMotion>
 
           <SlotMotion
             slot={SLOT.ROW2_RIGHT}
             id={adForSlot(SLOT.ROW2_RIGHT)?.id}
           >
-            <LargeFeaturedOffer ad={adForSlot(SLOT.ROW2_RIGHT)} />
+            <LargeFeaturedOffer
+              ad={adForSlot(SLOT.ROW2_RIGHT)}
+              shape={SHAPE.ROW2_RIGHT}
+              mirror
+            />
           </SlotMotion>
         </div>
       </section>
@@ -1484,7 +1675,9 @@ const HomePage = () => {
 
       <section className="container mx-auto px-2 pt-2 sm:px-4">
         <div className="market-home-grid market-middle-grid">
-          <div className="market-card market-banner-frame overflow-hidden p-0">
+          <div
+            className={`market-card market-banner-frame ${SHAPE.MIDDLE} overflow-hidden p-0`}
+          >
             <DbBannerSlot
               positions={MIDDLE_BANNER_POSITIONS}
               interval={8000}
@@ -1498,7 +1691,11 @@ const HomePage = () => {
             slot={SLOT.ROW3_SMALL}
             id={adForSlot(SLOT.ROW3_SMALL)?.id}
           >
-            <FeaturedProductCard ad={adForSlot(SLOT.ROW3_SMALL)} compact />
+            <FeaturedProductCard
+              ad={adForSlot(SLOT.ROW3_SMALL)}
+              compact
+              shape={SHAPE.PRODUCT}
+            />
           </SlotMotion>
         </div>
       </section>
@@ -1511,13 +1708,13 @@ const HomePage = () => {
         {stripAds.length > 0 ? (
           <div className="market-parts-grid">
             {stripAds.map((ad) => (
-              <ProductStripCard key={ad.id} ad={ad} />
+              <ProductStripCard key={ad.id} ad={ad} shape={SHAPE.STRIP} />
             ))}
           </div>
         ) : (
           <Link
             to="/marketplace"
-            className="market-card flex h-[72px] items-center justify-center text-sm font-bold"
+            className={`market-card ${SHAPE.STRIP} flex h-[72px] items-center justify-center text-sm font-bold`}
           >
             Browse Marketplace
           </Link>
@@ -1531,7 +1728,9 @@ const HomePage = () => {
       <section className="container mx-auto px-2 pb-8 pt-2 sm:px-4">
         <div className="market-home-grid market-main-grid">
           {/* 01 — BUY A CAR / BUY A PHONE */}
-          <div className="market-card flex min-h-0 flex-col items-stretch justify-center p-2 text-center">
+          <div
+            className={`market-card ${SHAPE.BUY} flex min-h-0 flex-col items-stretch justify-center p-2 text-center`}
+          >
             <Link
               to="/marketplace"
               className="flex flex-1 items-center justify-center text-xl font-black uppercase leading-[0.95] tracking-[-0.03em]"
@@ -1564,12 +1763,18 @@ const HomePage = () => {
             slot={SLOT.ROW5_PRODUCT}
             id={adForSlot(SLOT.ROW5_PRODUCT)?.id}
           >
-            <FeaturedProductCard ad={adForSlot(SLOT.ROW5_PRODUCT)} compact />
+            <FeaturedProductCard
+              ad={adForSlot(SLOT.ROW5_PRODUCT)}
+              compact
+              shape={SHAPE.PRODUCT}
+            />
           </SlotMotion>
 
           {/* 03 — FEATURED LISTINGS CAROUSEL (two cards, arrows) */}
-          <div className="market-card relative flex min-h-0 min-w-0 flex-col overflow-hidden p-1.5">
-            <div className="mb-1 flex shrink-0 items-center justify-between px-1">
+          <div
+            className={`market-card ${SHAPE.CAROUSEL} relative flex min-h-0 min-w-0 flex-col overflow-hidden p-1.5`}
+          >
+            <div className="mb-1 flex shrink-0 items-center justify-between px-1.5 pt-0.5">
               <div>
                 <span className="market-badge">Featured</span>
 
@@ -1650,18 +1855,26 @@ const HomePage = () => {
                 slot={SLOT.ROW5_MINI_A}
                 id={adForSlot(SLOT.ROW5_MINI_A)?.id}
               >
-                <FeaturedMiniCard ad={adForSlot(SLOT.ROW5_MINI_A)} />
+                <FeaturedMiniCard
+                  ad={adForSlot(SLOT.ROW5_MINI_A)}
+                  shape={SHAPE.MINI_LEFT}
+                />
               </SlotMotion>
 
               <SlotMotion
                 slot={SLOT.ROW5_MINI_B}
                 id={adForSlot(SLOT.ROW5_MINI_B)?.id}
               >
-                <FeaturedMiniCard ad={adForSlot(SLOT.ROW5_MINI_B)} />
+                <FeaturedMiniCard
+                  ad={adForSlot(SLOT.ROW5_MINI_B)}
+                  shape={SHAPE.MINI_RIGHT}
+                />
               </SlotMotion>
             </div>
 
-            <div className="market-card market-sidebar-banner overflow-hidden p-0">
+            <div
+              className={`market-card market-sidebar-banner ${SHAPE.SIDE_SMALL} overflow-hidden p-0`}
+            >
               <DbBannerSlot
                 positions={SIDEBAR_BANNER_POSITIONS}
                 interval={7600}
@@ -1698,19 +1911,24 @@ const HomePage = () => {
         </div>
 
         {adsLoading ? (
-          <div className="market-card flex min-h-[180px] items-center justify-center">
+          <div
+            className={`market-card ${SHAPE.STANDARD} flex min-h-[180px] items-center justify-center`}
+          >
             <Loader2 className="h-7 w-7 animate-spin" />
           </div>
         ) : bottomStandardAds.length > 0 ? (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {bottomStandardAds.map((ad) => (
-              <div key={ad.id} className="market-card overflow-hidden">
+              <div
+                key={ad.id}
+                className={`market-card ${SHAPE.STANDARD} overflow-hidden`}
+              >
                 <AdCard ad={ad} />
               </div>
             ))}
           </div>
         ) : standardAds.length === 0 ? (
-          <div className="market-card py-12 text-center">
+          <div className={`market-card ${SHAPE.STANDARD} py-12 text-center`}>
             <Package className="mx-auto mb-3 h-8 w-8 opacity-50" />
 
             <p className="text-sm font-semibold">No standard listings yet.</p>
