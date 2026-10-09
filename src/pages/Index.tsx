@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -94,6 +99,18 @@ const SIDEBAR_BANNER_POSITIONS = [
 ];
 
 /* =========================================================
+   TIERS  (EDIT HERE IF YOUR DATABASE TIERS ARE DIFFERENT)
+
+   PREMIUM   -> the "Premium" cards in the wireframe
+   FEATURED  -> the "Featured" cards in the wireframe
+   STANDARD  -> the normal listings at the bottom
+========================================================= */
+
+const PREMIUM_TIERS = ["e500"];
+const FEATURED_TIERS = ["e350"];
+const STANDARD_TIERS = ["e250"];
+
+/* =========================================================
    SHAPES  (corner radius system)
 
    Every banner and card has ONE big corner and THREE small
@@ -146,10 +163,14 @@ const getCategoryName = (ad: Advertisement) => {
 
 /* The DATABASE TIER is the source of truth. */
 
-const isFeatured = (ad: Advertisement) =>
-  ad.tier === "e500" || ad.tier === "e350";
+const isPremium = (ad: Advertisement) =>
+  PREMIUM_TIERS.includes(ad.tier ?? "");
 
-const isStandard = (ad: Advertisement) => ad.tier === "e250";
+const isFeatured = (ad: Advertisement) =>
+  FEATURED_TIERS.includes(ad.tier ?? "");
+
+const isStandard = (ad: Advertisement) =>
+  STANDARD_TIERS.includes(ad.tier ?? "");
 
 const uniqueAds = (ads: Advertisement[]) => {
   const seen = new Set<string>();
@@ -174,57 +195,231 @@ const getBannerImage = (b: BannerRow): string =>
 const getBannerLink = (b: BannerRow): string =>
   b.link_url ?? b.link ?? b.target_url ?? b.href ?? "";
 
-/* =========================================================
-   FEATURED SLOT MAP
+/* Warm the browser cache so the next slide never pops in. */
+const preload = (src?: string | null) => {
+  if (!src || typeof window === "undefined") return;
 
-   Every featured position on the page owns ONE slot number.
-   A single shared tick moves every slot to the next ad, and a
-   slot always shows ads[(tick + slot) % total]. Because the slot
-   numbers are different, an advertisement ID can only appear in
-   ONE place at a time while the carousels play.
+  const image = new Image();
+  image.decoding = "async";
+  image.src = src;
+};
+
+/* =========================================================
+   SMOOTH SLIDE ENGINE
+
+   The OLD approach changed a React `key` on the whole card, so the
+   card was destroyed and rebuilt every few seconds (flicker, image
+   reload, jank while scrolling).
+
+   The NEW approach:
+   - The card FRAME never changes. Its gradient, border and shadow
+     stay exactly where they are.
+   - Only the CONTENT (image + details) slides: the old content
+     slides out to the left while the new content slides in from
+     the right, using GPU transforms only.
+   - Each carousel owns its own timer, so the page itself never
+     re-renders while a carousel plays.
+   - Rotation pauses while the person is scrolling or the tab is
+     hidden.
 ========================================================= */
 
-const SLOT = {
-  ROW2_LEFT: 0,
-  ROW2_RIGHT: 1,
-  ROW3_SMALL: 2,
-  ROW5_PRODUCT: 3,
-  ROW5_CAROUSEL_A: 4,
-  ROW5_CAROUSEL_B: 5,
-  ROW5_MINI_A: 6,
-  ROW5_MINI_B: 7,
-} as const;
-
-const SLOT_COUNT = 8;
 const ROTATION_MS = 5200;
+const SLIDE_MS = 650;
 
-/* Animated wrapper: remounts (and replays the slide-in) whenever
-   the advertisement in that slot changes. */
-const SlotMotion = ({
-  id,
+let lastScrollAt = 0;
+let scrollWatcherOn = false;
+
+const watchScroll = () => {
+  if (scrollWatcherOn || typeof window === "undefined") return;
+
+  scrollWatcherOn = true;
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      lastScrollAt = Date.now();
+    },
+    { passive: true }
+  );
+};
+
+type Ticker = {
+  get: () => number;
+  subscribe: (listener: () => void) => () => void;
+  step: (direction: 1 | -1) => void;
+};
+
+/* A tiny shared clock. Every slot that uses the same ticker moves
+   together (so IDs never repeat on the page), but only the slots
+   re-render - never the whole home page. */
+const createTicker = (ms: number): Ticker => {
+  let value = 0;
+  let timer: number | undefined;
+
+  const listeners = new Set<() => void>();
+
+  const emit = () => listeners.forEach((listener) => listener());
+
+  return {
+    get: () => value,
+
+    subscribe: (listener) => {
+      listeners.add(listener);
+
+      if (timer === undefined) {
+        watchScroll();
+
+        timer = window.setInterval(() => {
+          if (document.hidden) return;
+          if (Date.now() - lastScrollAt < 700) return;
+
+          value += 1;
+          emit();
+        }, ms);
+      }
+
+      return () => {
+        listeners.delete(listener);
+
+        if (listeners.size === 0 && timer !== undefined) {
+          window.clearInterval(timer);
+          timer = undefined;
+        }
+      };
+    },
+
+    step: (direction) => {
+      value += direction;
+      emit();
+    },
+  };
+};
+
+const premiumTicker = createTicker(ROTATION_MS);
+const featuredTicker = createTicker(ROTATION_MS);
+
+/* Keeps the CURRENT and the PREVIOUS item so the old one can slide
+   out while the new one slides in. */
+function useSlideLayers<T>(item: T | undefined, keyOf: (value: T) => string) {
+  const itemKey = item === undefined ? "" : keyOf(item);
+
+  const [state, setState] = useState<{
+    cur: T | undefined;
+    prev: T | undefined;
+    n: number;
+  }>({ cur: item, prev: undefined, n: 0 });
+
+  useEffect(() => {
+    setState((s) => {
+      const curKey = s.cur === undefined ? "" : keyOf(s.cur);
+
+      if (curKey === itemKey) {
+        return s.cur === item ? s : { ...s, cur: item };
+      }
+
+      return { cur: item, prev: s.cur, n: s.n + 1 };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item, itemKey]);
+
+  useEffect(() => {
+    if (!state.prev) return;
+
+    const timer = window.setTimeout(() => {
+      setState((s) => ({ ...s, prev: undefined }));
+    }, SLIDE_MS + 500);
+
+    return () => window.clearTimeout(timer);
+  }, [state.n, state.prev]);
+
+  return state;
+}
+
+/* =========================================================
+   SLIDE SLOT
+   A permanent card frame + sliding content.
+
+   slot      -> the number that keeps every slot on a different ad
+   ticker    -> the shared clock for that group of slots
+   intrinsic -> true when the card must take its height from its
+                content (row 2 on mobile)
+========================================================= */
+
+const SlideSlot = ({
+  ads,
   slot,
+  ticker,
+  frameClassName,
+  intrinsic = false,
   children,
-  className = "",
 }: {
-  id?: string;
+  ads: Advertisement[];
   slot: number;
-  children: ReactNode;
-  className?: string;
-}) => (
-  <div
-    key={id ?? `empty-${slot}`}
-    className={`market-carousel-slot h-full min-h-0 min-w-0 ${className}`}
-    style={{ animationDelay: `${slot * 70}ms` } as CSSProperties}
-  >
-    {children}
-  </div>
-);
+  ticker: Ticker;
+  frameClassName: string;
+  intrinsic?: boolean;
+  children: (ad?: Advertisement) => ReactNode;
+}) => {
+  const tick = useSyncExternalStore(ticker.subscribe, ticker.get, ticker.get);
+
+  const total = ads.length;
+
+  /* More slots than ads -> the extra slots stay on their
+     placeholder instead of repeating an advertisement. */
+  const pick = (offset = 0): Advertisement | undefined => {
+    if (slot >= total) return undefined;
+
+    return ads[(((tick + slot + offset) % total) + total) % total];
+  };
+
+  const ad = pick();
+  const nextAd = pick(1);
+  const nextImage = nextAd?.images?.[0];
+
+  useEffect(() => {
+    preload(nextImage);
+  }, [nextImage]);
+
+  const { cur, prev, n } = useSlideLayers(ad, (a) => a.id);
+
+  const delay = { "--slide-delay": `${slot * 60}ms` } as CSSProperties;
+
+  return (
+    <div
+      className={`${frameClassName} market-slide-frame h-full min-h-0 min-w-0 overflow-hidden`}
+    >
+      <div
+        className={`market-slide-viewport ${intrinsic ? "" : "is-fill"}`}
+      >
+        {prev && (
+          <div
+            key={prev.id}
+            className="market-slide-layer is-abs slide-out"
+            style={delay}
+          >
+            {children(prev)}
+          </div>
+        )}
+
+        <div
+          key={cur?.id ?? "empty"}
+          className={`market-slide-layer ${intrinsic ? "" : "is-abs"} ${
+            n > 0 ? "slide-in" : ""
+          }`}
+          style={delay}
+        >
+          {children(cur)}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /* =========================================================
    DATABASE BANNER SLOT
-   Fetches banners from the database, rotates them with the
-   slide animation and falls back to the old component if the
-   admin has not published a banner for that position.
+   Fetches banners from the database, slides them smoothly and
+   falls back to the old component if the admin has not published
+   a banner for that position.
 ========================================================= */
 
 const DbBannerSlot = ({
@@ -305,8 +500,13 @@ const DbBannerSlot = ({
     if (banners.length <= 1) return;
 
     const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      if (Date.now() - lastScrollAt < 700) return;
+
       setIndex((current) => (current + 1) % banners.length);
     }, interval);
+
+    watchScroll();
 
     return () => window.clearInterval(timer);
   }, [banners.length, interval]);
@@ -315,42 +515,78 @@ const DbBannerSlot = ({
     if (index >= banners.length && banners.length > 0) setIndex(0);
   }, [index, banners.length]);
 
+  const banner = banners.length ? banners[index % banners.length] : undefined;
+
+  const nextBanner =
+    banners.length > 1 ? banners[(index + 1) % banners.length] : undefined;
+
+  const nextImage = nextBanner ? getBannerImage(nextBanner) : undefined;
+
+  useEffect(() => {
+    preload(nextImage);
+  }, [nextImage]);
+
+  const { cur, prev, n } = useSlideLayers<BannerRow>(banner, (b) =>
+    String(b.id ?? getBannerImage(b))
+  );
+
   if (!banners.length) {
     return <div className="h-full w-full overflow-hidden">{fallback}</div>;
   }
 
-  const banner = banners[index % banners.length];
-  const image = getBannerImage(banner);
-  const link = getBannerLink(banner);
+  const renderBanner = (b: BannerRow) => {
+    const image = getBannerImage(b);
+    const link = getBannerLink(b);
 
-  const img = (
-    <img
-      src={image}
-      alt={banner.title ?? banner.alt ?? "Banner"}
-      className={`market-banner-img block h-full w-full object-center ${
-        fit === "contain" ? "object-contain" : "object-cover"
-      }`}
-    />
-  );
-
-  let content: ReactNode = img;
-
-  if (link) {
-    content = /^https?:\/\//i.test(link) ? (
-      <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block h-full w-full"
-      >
-        {img}
-      </a>
-    ) : (
-      <Link to={link} className="block h-full w-full">
-        {img}
-      </Link>
+    const img = (
+      <img
+        src={image}
+        alt={b.title ?? b.alt ?? "Banner"}
+        decoding="async"
+        className={`market-banner-img block h-full w-full object-center ${
+          fit === "contain" ? "object-contain" : "object-cover"
+        }`}
+      />
     );
-  }
+
+    let content: ReactNode = img;
+
+    if (link) {
+      content = /^https?:\/\//i.test(link) ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block h-full w-full"
+        >
+          {img}
+        </a>
+      ) : (
+        <Link to={link} className="block h-full w-full">
+          {img}
+        </Link>
+      );
+    }
+
+    return (
+      <>
+        {/* Blurred backdrop: only visible on mobile when the image is
+            letter-boxed, so the empty space looks intentional. */}
+        {mobileContain && (
+          <img
+            src={image}
+            alt=""
+            aria-hidden="true"
+            className="market-banner-backdrop"
+          />
+        )}
+
+        <div className="relative z-[1] h-full w-full">{content}</div>
+      </>
+    );
+  };
+
+  const shown = cur ?? banner;
 
   return (
     <div
@@ -359,23 +595,23 @@ const DbBannerSlot = ({
         fit === "contain" ? "bg-white" : ""
       }`}
     >
-      {/* Blurred backdrop: only visible on mobile when the image is
-          letter-boxed, so the empty space looks intentional. */}
-      {mobileContain && (
-        <img
-          src={image}
-          alt=""
-          aria-hidden="true"
-          className="market-banner-backdrop"
-        />
+      {prev && (
+        <div
+          key={String(prev.id ?? getBannerImage(prev))}
+          className="market-slide-layer is-abs slide-out"
+        >
+          {renderBanner(prev)}
+        </div>
       )}
 
-      <div
-        key={banner.id ?? index}
-        className="market-banner-motion relative z-[1] h-full w-full"
-      >
-        {content}
-      </div>
+      {shown && (
+        <div
+          key={String(shown.id ?? getBannerImage(shown))}
+          className={`market-slide-layer is-abs ${n > 0 ? "slide-in" : ""}`}
+        >
+          {renderBanner(shown)}
+        </div>
+      )}
 
       {arrows && banners.length > 1 && (
         <>
@@ -418,51 +654,48 @@ const DbBannerSlot = ({
 };
 
 /* =========================================================
-   FEATURED PRODUCT CARD (small, rotating slot)
+   CARD CONTENT
+   These are ONLY the inside of a card (image + details). The card
+   frame itself lives in <SlideSlot /> and never reloads.
 ========================================================= */
 
-const FeaturedProductCard = ({
-  ad,
-  compact = false,
-  shape = SHAPE.PRODUCT,
-}: {
-  ad?: Advertisement;
-  compact?: boolean;
-  shape?: string;
-}) => {
+/* PREMIUM SIDE CARD (row 1, left and right of the hero) */
+
+const PremiumSideContent = ({ ad }: { ad?: Advertisement }) => {
   if (!ad) {
     return (
       <Link
         to="/marketplace"
-        className={`market-card market-bento ${shape} flex h-full min-h-0 items-center justify-center p-4 text-center`}
+        className="flex h-full min-h-0 items-center justify-center p-3 text-center"
       >
         <div>
           <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
 
           <p className="text-xs font-bold uppercase tracking-wider">
-            Featured
+            Premium
           </p>
 
           <p className="mt-1 text-[10px] opacity-70">
-            No featured listings yet
+            No premium listings yet
           </p>
         </div>
       </Link>
     );
   }
 
+  const category = getCategoryName(ad);
+
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className={`market-card market-bento ${shape} group flex h-full min-h-0 flex-col overflow-hidden p-1.5 ${
-        compact ? "market-product-compact" : ""
-      }`}
+      className="group flex h-full min-h-0 flex-col overflow-hidden p-1.5"
     >
       <div className="market-image-container flex min-h-0 flex-1 items-center justify-center overflow-hidden">
         {ad.images?.[0] ? (
           <img
             src={ad.images[0]}
             alt={ad.title}
+            decoding="async"
             className="market-image h-full w-full object-contain"
           />
         ) : (
@@ -472,7 +705,82 @@ const FeaturedProductCard = ({
 
       <div className="shrink-0 px-1 pb-1 pt-1.5">
         <div className="mb-1 flex items-center justify-between gap-1">
-          <span className="market-badge">Featured</span>
+          <span className="market-badge">Premium</span>
+
+          <span className="truncate text-[8px] font-semibold opacity-60">
+            {category}
+          </span>
+        </div>
+
+        <h3 className="line-clamp-1 text-[11px] font-bold">{ad.title}</h3>
+
+        <p className="text-sm font-black">
+          E{Number(ad.price ?? 0).toLocaleString()}
+        </p>
+
+        {ad.location && (
+          <p className="truncate text-[8px] opacity-60">{ad.location}</p>
+        )}
+      </div>
+    </Link>
+  );
+};
+
+/* SMALL PRODUCT CARD (row 5 premium card) */
+
+const FeaturedProductContent = ({
+  ad,
+  compact = false,
+  label = "Featured",
+}: {
+  ad?: Advertisement;
+  compact?: boolean;
+  label?: string;
+}) => {
+  if (!ad) {
+    return (
+      <Link
+        to="/marketplace"
+        className="flex h-full min-h-0 items-center justify-center p-4 text-center"
+      >
+        <div>
+          <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
+
+          <p className="text-xs font-bold uppercase tracking-wider">
+            {label}
+          </p>
+
+          <p className="mt-1 text-[10px] opacity-70">
+            No {label.toLowerCase()} listings yet
+          </p>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      to={`/ad/${ad.id}`}
+      className={`group flex h-full min-h-0 flex-col overflow-hidden p-1.5 ${
+        compact ? "market-product-compact" : ""
+      }`}
+    >
+      <div className="market-image-container flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+        {ad.images?.[0] ? (
+          <img
+            src={ad.images[0]}
+            alt={ad.title}
+            decoding="async"
+            className="market-image h-full w-full object-contain"
+          />
+        ) : (
+          <Package className="h-10 w-10 opacity-40" />
+        )}
+      </div>
+
+      <div className="shrink-0 px-1 pb-1 pt-1.5">
+        <div className="mb-1 flex items-center justify-between gap-1">
+          <span className="market-badge">{label}</span>
 
           <span className="text-[8px] font-semibold opacity-60">
             {getCategoryName(ad)}
@@ -493,39 +801,35 @@ const FeaturedProductCard = ({
   );
 };
 
-/* =========================================================
-   LARGE FEATURED OFFER (row 2) — APPLE-STYLE CARD
+/* LARGE PREMIUM OFFER (row 2) — APPLE-STYLE CARD
    The image sits in its own panel at the top. ALL the details
    (badge, title, price, location, button) sit OUTSIDE the image,
    underneath it, but still INSIDE the card.
 
    On tablet / mobile the two cards sit side by side and the
    right-hand card is a mirror of the left one (text on the
-   right, button on the left) - see the `mirror` prop.
-========================================================= */
+   right, button on the left) - see the `mirror` prop. */
 
-const LargeFeaturedOffer = ({
+const LargeOfferContent = ({
   ad,
-  shape = SHAPE.ROW2_LEFT,
   mirror = false,
 }: {
   ad?: Advertisement;
-  shape?: string;
   mirror?: boolean;
 }) => {
   if (!ad) {
     return (
       <Link
         to="/marketplace"
-        className={`market-card market-bento ${shape} flex h-full min-h-0 items-center justify-center`}
+        className="flex h-full min-h-0 items-center justify-center"
       >
         <div className="text-center">
           <Package className="mx-auto mb-2 h-10 w-10 opacity-50" />
 
-          <h3 className="font-bold">Featured Marketplace</h3>
+          <h3 className="font-bold">Premium Marketplace</h3>
 
           <p className="mt-1 text-xs opacity-70">
-            Featured listings will appear here.
+            Premium listings will appear here.
           </p>
         </div>
       </Link>
@@ -537,7 +841,7 @@ const LargeFeaturedOffer = ({
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className={`market-card market-bento market-apple-card ${shape} ${
+      className={`market-apple-card ${
         mirror ? "market-mirror" : ""
       } group flex h-full min-h-0 flex-col overflow-hidden p-2`}
     >
@@ -547,6 +851,7 @@ const LargeFeaturedOffer = ({
           <img
             src={ad.images[0]}
             alt={ad.title}
+            decoding="async"
             className="market-image h-full w-full object-contain object-center"
           />
         ) : (
@@ -558,7 +863,7 @@ const LargeFeaturedOffer = ({
       <div className="market-apple-details flex shrink-0 items-end justify-between gap-2 px-1.5 pb-1 pt-2.5 sm:gap-3">
         <div className="market-apple-text min-w-0">
           <div className="market-apple-meta mb-1 flex items-center gap-2">
-            <span className="market-badge">Featured</span>
+            <span className="market-badge">Premium</span>
 
             {category && (
               <span className="truncate text-[9px] font-semibold uppercase tracking-wide opacity-70">
@@ -594,22 +899,14 @@ const LargeFeaturedOffer = ({
   );
 };
 
-/* =========================================================
-   FEATURED MINI CARD (right sidebar)
-========================================================= */
+/* FEATURED MINI CARD (right sidebar) */
 
-const FeaturedMiniCard = ({
-  ad,
-  shape = SHAPE.MINI_LEFT,
-}: {
-  ad?: Advertisement;
-  shape?: string;
-}) => {
+const FeaturedMiniContent = ({ ad }: { ad?: Advertisement }) => {
   if (!ad) {
     return (
       <Link
         to="/marketplace"
-        className={`market-card market-bento ${shape} flex h-full min-h-0 items-center justify-center p-2 text-center`}
+        className="flex h-full min-h-0 items-center justify-center p-2 text-center"
       >
         <div>
           <Package className="mx-auto mb-1 h-6 w-6 opacity-50" />
@@ -623,13 +920,14 @@ const FeaturedMiniCard = ({
   return (
     <Link
       to={`/ad/${ad.id}`}
-      className={`market-card market-bento ${shape} group flex h-full min-h-0 flex-col overflow-hidden p-1.5`}
+      className="group flex h-full min-h-0 flex-col overflow-hidden p-1.5"
     >
       <div className="market-image-container flex min-h-0 flex-1 items-center justify-center overflow-hidden">
         {ad.images?.[0] ? (
           <img
             src={ad.images[0]}
             alt={ad.title}
+            decoding="async"
             className="market-image h-full w-full object-contain"
           />
         ) : (
@@ -651,15 +949,17 @@ const FeaturedMiniCard = ({
 };
 
 /* =========================================================
-   STANDARD LIST STRIP CARD (row 4)
+   LIST STRIP CARD (row 4)
 ========================================================= */
 
 const ProductStripCard = ({
   ad,
   shape = SHAPE.STRIP,
+  label = "Standard",
 }: {
   ad: Advertisement;
   shape?: string;
+  label?: string;
 }) => (
   <Link
     to={`/ad/${ad.id}`}
@@ -679,7 +979,7 @@ const ProductStripCard = ({
       </div>
 
       <div className="min-w-0">
-        <span className="market-badge">Standard</span>
+        <span className="market-badge">{label}</span>
 
         <p className="mt-1 line-clamp-1 text-[9px] font-bold">{ad.title}</p>
 
@@ -694,6 +994,139 @@ const ProductStripCard = ({
     </div>
   </Link>
 );
+
+/* =========================================================
+   BUY A CAR / BUY A PHONE  — type and erase animation
+   "CAR" is typed and erased, then "PHONE" is typed and erased,
+   then it starts again. It owns its own state, so the page never
+   re-renders because of it.
+========================================================= */
+
+const BuyTyper = () => {
+  const [car, setCar] = useState("CAR");
+  const [phone, setPhone] = useState("PHONE");
+  const [active, setActive] = useState<"car" | "phone" | null>(null);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        timer = window.setTimeout(resolve, ms);
+      });
+
+    const run = async () => {
+      setCar("");
+      setPhone("");
+
+      let which: "car" | "phone" = "car";
+
+      while (!cancelled) {
+        const full = which === "car" ? "CAR" : "PHONE";
+        const set = which === "car" ? setCar : setPhone;
+
+        setActive(which);
+
+        for (let i = 1; i <= full.length; i++) {
+          set(full.slice(0, i));
+          await sleep(140);
+          if (cancelled) return;
+        }
+
+        await sleep(1500);
+        if (cancelled) return;
+
+        for (let i = full.length - 1; i >= 0; i--) {
+          set(full.slice(0, i));
+          await sleep(80);
+          if (cancelled) return;
+        }
+
+        await sleep(250);
+
+        which = which === "car" ? "phone" : "car";
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, []);
+
+  const word = (text: string, on: boolean) => (
+    <span className="inline-block min-h-[1em]">
+      {text || "\u00A0"}
+
+      <span
+        aria-hidden="true"
+        className={`market-caret ${on ? "is-on" : ""}`}
+      />
+    </span>
+  );
+
+  return (
+    <>
+      <Link
+        to="/marketplace"
+        className="flex flex-1 items-center justify-center text-xl font-black uppercase leading-[0.95] tracking-[-0.03em]"
+      >
+        <span>
+          BUY
+          <br />A
+          <br />
+          {word(car, active === "car")}
+        </span>
+      </Link>
+
+      <div className="my-1 h-px w-full bg-white/60" />
+
+      <Link
+        to="/marketplace"
+        className="flex flex-1 items-center justify-center text-xl font-black uppercase leading-[0.95] tracking-[-0.03em]"
+      >
+        <span>
+          BUY
+          <br />A
+          <br />
+          {word(phone, active === "phone")}
+        </span>
+      </Link>
+    </>
+  );
+};
+
+/* =========================================================
+   SLOT NUMBERS
+   Every rotating position owns ONE slot number inside its group.
+   A slot shows ads[(tick + slot) % total], so an advertisement ID
+   can only appear in ONE place at a time while carousels play.
+========================================================= */
+
+const PREMIUM_SLOT = {
+  ROW1_LEFT: 0,
+  ROW1_RIGHT: 1,
+  ROW2_LEFT: 2,
+  ROW2_RIGHT: 3,
+  ROW5_PREMIUM: 4,
+} as const;
+
+const FEATURED_SLOT = {
+  CAROUSEL_A: 0,
+  CAROUSEL_B: 1,
+  MINI_A: 2,
+  MINI_B: 3,
+} as const;
 
 /* =========================================================
    HOME PAGE
@@ -752,6 +1185,11 @@ const HomePage = () => {
     staleTime: 30_000,
   });
 
+  const premiumAds = useMemo(
+    () => uniqueAds(advertisements.filter(isPremium)),
+    [advertisements]
+  );
+
   const featuredAds = useMemo(
     () => uniqueAds(advertisements.filter(isFeatured)),
     [advertisements]
@@ -762,50 +1200,20 @@ const HomePage = () => {
     [advertisements]
   );
 
-  /* Row 4 strip = first 5 standard ads.
-     Bottom grid = the REST, so no ID is repeated on the page. */
-  const stripAds = useMemo(() => standardAds.slice(0, 5), [standardAds]);
+  /* Row 4 strip = first 5 featured ads.
+     The rotating featured slots use the REST, so no ID is
+     repeated on the page. */
+  const stripAds = useMemo(() => featuredAds.slice(0, 5), [featuredAds]);
 
-  const bottomStandardAds = useMemo(
-    () => standardAds.slice(5, 17),
-    [standardAds]
+  const rotatingFeaturedAds = useMemo(
+    () => featuredAds.slice(5),
+    [featuredAds]
   );
 
-  /* ---------------------------------------------------------
-     SHARED FEATURED ROTATION (unique IDs across all slots)
-  --------------------------------------------------------- */
-
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    if (featuredAds.length <= 1) return;
-
-    const timer = window.setInterval(() => {
-      setTick((current) => current + 1);
-    }, ROTATION_MS);
-
-    return () => window.clearInterval(timer);
-  }, [featuredAds.length]);
-
-  const total = featuredAds.length;
-
-  const adForSlot = (slot: number): Advertisement | undefined => {
-    /* More slots than ads -> the extra slots stay on their
-       placeholder instead of repeating an advertisement. */
-    if (slot >= total) return undefined;
-
-    const position = (((tick + slot) % total) + total) % total;
-
-    return featuredAds[position];
-  };
-
-  const stepFeatured = (direction: 1 | -1) =>
-    setTick((current) => current + direction);
-
-  const carouselAds = [
-    adForSlot(SLOT.ROW5_CAROUSEL_A),
-    adForSlot(SLOT.ROW5_CAROUSEL_B),
-  ];
+  const bottomStandardAds = useMemo(
+    () => standardAds.slice(0, 12),
+    [standardAds]
+  );
 
   /* ---------------------------------------------------------
      RENDER
@@ -1023,44 +1431,101 @@ const HomePage = () => {
           box-shadow: 0 2px 8px rgba(234,179,8,0.25);
         }
 
-        /* ---------- CARD / SLOT MOTION ---------- */
+        /* =================================================
+           SMOOTH SLIDE (carousels)
 
-        .market-carousel-slot {
-          animation: marketCarouselIn 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
+           The card frame stays put. Only the layer inside it
+           (image + details) slides, using transforms only so
+           it runs on the GPU and never touches page layout.
+        ================================================= */
+
+        .market-slide-viewport {
+          position: relative;
+
+          width: 100%;
+          height: 100%;
+
+          overflow: hidden;
+
+          border-radius: inherit;
+
+          contain: paint;
         }
 
-        @keyframes marketCarouselIn {
-          from {
-            opacity: 0;
-            transform: translateX(20px) scale(0.985);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
+        .market-slide-viewport.is-fill {
+          position: absolute;
+          inset: 0;
+
+          height: auto;
         }
 
-        /* ---------- BANNER MOTION ---------- */
+        .market-slide-layer {
+          width: 100%;
+          height: 100%;
 
-        .market-banner-motion {
-          animation: marketBannerIn 650ms cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
+
+          backface-visibility: hidden;
         }
 
-        @keyframes marketBannerIn {
-          from {
-            opacity: 0;
-            transform: translateX(28px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+        .market-slide-layer.is-abs {
+          position: absolute;
+          inset: 0;
+        }
+
+        .market-slide-layer.slide-in {
+          animation: marketSlideIn ${SLIDE_MS}ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation-delay: var(--slide-delay, 0ms);
+        }
+
+        .market-slide-layer.slide-out {
+          animation: marketSlideOut ${SLIDE_MS}ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation-delay: var(--slide-delay, 0ms);
+          pointer-events: none;
+        }
+
+        @keyframes marketSlideIn {
+          from { transform: translate3d(100%, 0, 0); }
+          to   { transform: translate3d(0, 0, 0); }
+        }
+
+        @keyframes marketSlideOut {
+          from { transform: translate3d(0, 0, 0); }
+          to   { transform: translate3d(-100%, 0, 0); }
         }
 
         /* Blurred backdrop is hidden on desktop and only used on
            mobile when a banner is letter-boxed. */
         .market-banner-backdrop {
           display: none;
+        }
+
+        /* ---------- TYPE & ERASE CURSOR ---------- */
+
+        .market-caret {
+          display: inline-block;
+
+          width: 2px;
+          height: 0.8em;
+
+          margin-left: 2px;
+
+          vertical-align: baseline;
+
+          background: currentColor;
+
+          opacity: 0;
+        }
+
+        .market-caret.is-on {
+          opacity: 1;
+
+          animation: marketCaretBlink 900ms steps(1) infinite;
+        }
+
+        @keyframes marketCaretBlink {
+          0%, 49%  { opacity: 1; }
+          50%, 100% { opacity: 0; }
         }
 
         /* ---------- ARROWS ---------- */
@@ -1234,7 +1699,7 @@ const HomePage = () => {
           overflow: hidden;
         }
 
-        .market-featured-listing > * {
+        .market-featured-listing .market-slide-layer > * {
           height: 100%;
         }
 
@@ -1528,8 +1993,8 @@ const HomePage = () => {
 
           .market-card,
           .market-image,
-          .market-carousel-slot,
-          .market-banner-motion {
+          .market-slide-layer,
+          .market-caret {
             animation: none !important;
 
             transition: none !important;
@@ -1588,26 +2053,25 @@ const HomePage = () => {
       )}
 
       {/* ===================================================
-          ROW 1 — SIDEBAR BANNER | HERO (TOP) BANNER | SIDEBAR BANNER
+          ROW 1 — PREMIUM | HERO (TOP) BANNER | PREMIUM
+          Premium side cards: carousel slide, premium ads only.
+          Hero: carousel slide, top banner only.
           Desktop: three across.
-          Tablet / mobile: hero on top, the two sidebar banners
+          Tablet / mobile: hero on top, the two premium cards
           side by side underneath (wireframe layout).
       =================================================== */}
 
       <section className="container mx-auto px-2 pt-3 sm:px-4">
         <div className="market-home-grid market-top-grid">
-          {/* LEFT SIDEBAR BANNER */}
-          <div
-            className={`market-card market-banner-frame market-sidebar-banner ${SHAPE.SIDE_LEFT} overflow-hidden p-0`}
+          {/* LEFT PREMIUM CARD */}
+          <SlideSlot
+            ads={premiumAds}
+            slot={PREMIUM_SLOT.ROW1_LEFT}
+            ticker={premiumTicker}
+            frameClassName={`market-card market-bento ${SHAPE.SIDE_LEFT}`}
           >
-            <DbBannerSlot
-              positions={SIDEBAR_BANNER_POSITIONS}
-              parity={0}
-              fit="contain"
-              interval={6500}
-              fallback={<SidebarBanner />}
-            />
-          </div>
+            {(ad) => <PremiumSideContent ad={ad} />}
+          </SlideSlot>
 
           {/* HERO — HOME PAGE (TOP BANNER) */}
           <div
@@ -1621,23 +2085,20 @@ const HomePage = () => {
             />
           </div>
 
-          {/* RIGHT SIDEBAR BANNER */}
-          <div
-            className={`market-card market-banner-frame market-sidebar-banner ${SHAPE.SIDE_RIGHT} overflow-hidden p-0`}
+          {/* RIGHT PREMIUM CARD */}
+          <SlideSlot
+            ads={premiumAds}
+            slot={PREMIUM_SLOT.ROW1_RIGHT}
+            ticker={premiumTicker}
+            frameClassName={`market-card market-bento ${SHAPE.SIDE_RIGHT}`}
           >
-            <DbBannerSlot
-              positions={SIDEBAR_BANNER_POSITIONS}
-              parity={1}
-              fit="contain"
-              interval={7000}
-              fallback={<SidebarBanner />}
-            />
-          </div>
+            {(ad) => <PremiumSideContent ad={ad} />}
+          </SlideSlot>
         </div>
       </section>
 
       {/* ===================================================
-          ROW 2 — FEATURED | FEATURED   (carousel slide animation)
+          ROW 2 — PREMIUM | PREMIUM   (carousel slide animation)
           Apple-style cards: image on top, details below it.
           The right-hand card is a mirror of the left on tablet
           and mobile.
@@ -1645,32 +2106,32 @@ const HomePage = () => {
 
       <section className="container mx-auto px-2 pt-2 sm:px-4">
         <div className="market-home-grid market-vehicle-grid">
-          <SlotMotion
-            slot={SLOT.ROW2_LEFT}
-            id={adForSlot(SLOT.ROW2_LEFT)?.id}
+          <SlideSlot
+            ads={premiumAds}
+            slot={PREMIUM_SLOT.ROW2_LEFT}
+            ticker={premiumTicker}
+            intrinsic
+            frameClassName={`market-card market-bento ${SHAPE.ROW2_LEFT}`}
           >
-            <LargeFeaturedOffer
-              ad={adForSlot(SLOT.ROW2_LEFT)}
-              shape={SHAPE.ROW2_LEFT}
-            />
-          </SlotMotion>
+            {(ad) => <LargeOfferContent ad={ad} />}
+          </SlideSlot>
 
-          <SlotMotion
-            slot={SLOT.ROW2_RIGHT}
-            id={adForSlot(SLOT.ROW2_RIGHT)?.id}
+          <SlideSlot
+            ads={premiumAds}
+            slot={PREMIUM_SLOT.ROW2_RIGHT}
+            ticker={premiumTicker}
+            intrinsic
+            frameClassName={`market-card market-bento ${SHAPE.ROW2_RIGHT}`}
           >
-            <LargeFeaturedOffer
-              ad={adForSlot(SLOT.ROW2_RIGHT)}
-              shape={SHAPE.ROW2_RIGHT}
-              mirror
-            />
-          </SlotMotion>
+            {(ad) => <LargeOfferContent ad={ad} mirror />}
+          </SlideSlot>
         </div>
       </section>
 
       {/* ===================================================
-          ROW 3 — HOME PAGE MIDDLE PROMO | FEATURED
+          ROW 3 — HOME PAGE MIDDLE PROMO | SIDE BANNER
           The middle promo shows the WHOLE image on mobile screens.
+          Both have their own carousel slide.
       =================================================== */}
 
       <section className="container mx-auto px-2 pt-2 sm:px-4">
@@ -1687,28 +2148,34 @@ const HomePage = () => {
             />
           </div>
 
-          <SlotMotion
-            slot={SLOT.ROW3_SMALL}
-            id={adForSlot(SLOT.ROW3_SMALL)?.id}
+          <div
+            className={`market-card market-banner-frame market-sidebar-banner ${SHAPE.SIDE_RIGHT} overflow-hidden p-0`}
           >
-            <FeaturedProductCard
-              ad={adForSlot(SLOT.ROW3_SMALL)}
-              compact
-              shape={SHAPE.PRODUCT}
+            <DbBannerSlot
+              positions={SIDEBAR_BANNER_POSITIONS}
+              parity={0}
+              fit="contain"
+              interval={6500}
+              fallback={<SidebarBanner />}
             />
-          </SlotMotion>
+          </div>
         </div>
       </section>
 
       {/* ===================================================
-          ROW 4 — FIVE STANDARD LIST CARDS
+          ROW 4 — FIVE FEATURED LIST CARDS
       =================================================== */}
 
       <section className="container mx-auto overflow-hidden px-2 pt-2 sm:px-4">
         {stripAds.length > 0 ? (
           <div className="market-parts-grid">
             {stripAds.map((ad) => (
-              <ProductStripCard key={ad.id} ad={ad} shape={SHAPE.STRIP} />
+              <ProductStripCard
+                key={ad.id}
+                ad={ad}
+                shape={SHAPE.STRIP}
+                label="Featured"
+              />
             ))}
           </div>
         ) : (
@@ -1722,53 +2189,29 @@ const HomePage = () => {
       </section>
 
       {/* ===================================================
-          ROW 5 — BUY | FEATURED | FEATURED LISTINGS | SIDEBAR
+          ROW 5 — BUY | PREMIUM | FEATURED LISTINGS | FEATURED + SIDE BANNER
       =================================================== */}
 
       <section className="container mx-auto px-2 pb-8 pt-2 sm:px-4">
         <div className="market-home-grid market-main-grid">
-          {/* 01 — BUY A CAR / BUY A PHONE */}
+          {/* 01 — BUY A CAR / BUY A PHONE  (type & erase animation) */}
           <div
             className={`market-card ${SHAPE.BUY} flex min-h-0 flex-col items-stretch justify-center p-2 text-center`}
           >
-            <Link
-              to="/marketplace"
-              className="flex flex-1 items-center justify-center text-xl font-black uppercase leading-[0.95] tracking-[-0.03em]"
-            >
-              <span>
-                BUY
-                <br />A
-                <br />
-                CAR
-              </span>
-            </Link>
-
-            <div className="my-1 h-px w-full bg-white/60" />
-
-            <Link
-              to="/marketplace"
-              className="flex flex-1 items-center justify-center text-xl font-black uppercase leading-[0.95] tracking-[-0.03em]"
-            >
-              <span>
-                BUY
-                <br />A
-                <br />
-                PHONE
-              </span>
-            </Link>
+            <BuyTyper />
           </div>
 
-          {/* 02 — FEATURED PRODUCT */}
-          <SlotMotion
-            slot={SLOT.ROW5_PRODUCT}
-            id={adForSlot(SLOT.ROW5_PRODUCT)?.id}
+          {/* 02 — PREMIUM PRODUCT */}
+          <SlideSlot
+            ads={premiumAds}
+            slot={PREMIUM_SLOT.ROW5_PREMIUM}
+            ticker={premiumTicker}
+            frameClassName={`market-card market-bento ${SHAPE.PRODUCT}`}
           >
-            <FeaturedProductCard
-              ad={adForSlot(SLOT.ROW5_PRODUCT)}
-              compact
-              shape={SHAPE.PRODUCT}
-            />
-          </SlotMotion>
+            {(ad) => (
+              <FeaturedProductContent ad={ad} compact label="Premium" />
+            )}
+          </SlideSlot>
 
           {/* 03 — FEATURED LISTINGS CAROUSEL (two cards, arrows) */}
           <div
@@ -1790,22 +2233,25 @@ const HomePage = () => {
             </div>
 
             <div className="relative min-h-0 flex-1">
-              {carouselAds[0] || carouselAds[1] ? (
+              {rotatingFeaturedAds.length > 0 ? (
                 <div className="grid h-full min-h-0 grid-cols-2 gap-2">
-                  {carouselAds.map((ad, i) =>
-                    ad ? (
-                      <SlotMotion
-                        key={ad.id}
-                        slot={SLOT.ROW5_CAROUSEL_A + i}
-                        id={ad.id}
-                        className="market-featured-listing"
-                      >
-                        <AdCard ad={ad} />
-                      </SlotMotion>
-                    ) : (
-                      <div key={`empty-${i}`} />
-                    )
-                  )}
+                  <SlideSlot
+                    ads={rotatingFeaturedAds}
+                    slot={FEATURED_SLOT.CAROUSEL_A}
+                    ticker={featuredTicker}
+                    frameClassName="market-featured-listing"
+                  >
+                    {(ad) => (ad ? <AdCard ad={ad} /> : null)}
+                  </SlideSlot>
+
+                  <SlideSlot
+                    ads={rotatingFeaturedAds}
+                    slot={FEATURED_SLOT.CAROUSEL_B}
+                    ticker={featuredTicker}
+                    frameClassName="market-featured-listing"
+                  >
+                    {(ad) => (ad ? <AdCard ad={ad} /> : null)}
+                  </SlideSlot>
                 </div>
               ) : (
                 <div className="flex h-full min-h-[170px] items-center justify-center text-center">
@@ -1824,12 +2270,12 @@ const HomePage = () => {
                 </div>
               )}
 
-              {total > 1 && (
+              {rotatingFeaturedAds.length > 1 && (
                 <>
                   <button
                     type="button"
                     aria-label="Previous featured listings"
-                    onClick={() => stepFeatured(-1)}
+                    onClick={() => featuredTicker.step(-1)}
                     className="market-arrow -left-0.5"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -1838,7 +2284,7 @@ const HomePage = () => {
                   <button
                     type="button"
                     aria-label="Next featured listings"
-                    onClick={() => stepFeatured(1)}
+                    onClick={() => featuredTicker.step(1)}
                     className="market-arrow -right-0.5"
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -1851,25 +2297,23 @@ const HomePage = () => {
           {/* 04 — RIGHT SIDEBAR: two featured + side banner */}
           <div className="market-right-sidebar">
             <div className="market-right-featured">
-              <SlotMotion
-                slot={SLOT.ROW5_MINI_A}
-                id={adForSlot(SLOT.ROW5_MINI_A)?.id}
+              <SlideSlot
+                ads={rotatingFeaturedAds}
+                slot={FEATURED_SLOT.MINI_A}
+                ticker={featuredTicker}
+                frameClassName={`market-card market-bento ${SHAPE.MINI_LEFT}`}
               >
-                <FeaturedMiniCard
-                  ad={adForSlot(SLOT.ROW5_MINI_A)}
-                  shape={SHAPE.MINI_LEFT}
-                />
-              </SlotMotion>
+                {(ad) => <FeaturedMiniContent ad={ad} />}
+              </SlideSlot>
 
-              <SlotMotion
-                slot={SLOT.ROW5_MINI_B}
-                id={adForSlot(SLOT.ROW5_MINI_B)?.id}
+              <SlideSlot
+                ads={rotatingFeaturedAds}
+                slot={FEATURED_SLOT.MINI_B}
+                ticker={featuredTicker}
+                frameClassName={`market-card market-bento ${SHAPE.MINI_RIGHT}`}
               >
-                <FeaturedMiniCard
-                  ad={adForSlot(SLOT.ROW5_MINI_B)}
-                  shape={SHAPE.MINI_RIGHT}
-                />
-              </SlotMotion>
+                {(ad) => <FeaturedMiniContent ad={ad} />}
+              </SlideSlot>
             </div>
 
             <div
@@ -1877,6 +2321,7 @@ const HomePage = () => {
             >
               <DbBannerSlot
                 positions={SIDEBAR_BANNER_POSITIONS}
+                parity={1}
                 interval={7600}
                 fit="contain"
                 fallback={<SidebarBanner />}
@@ -1887,8 +2332,7 @@ const HomePage = () => {
       </section>
 
       {/* ===================================================
-          STANDARD LISTINGS (e250) — the ads NOT already shown
-          in the row 4 strip, so no ID is repeated.
+          STANDARD LISTINGS (e250)
       =================================================== */}
 
       <section className="container mx-auto px-2 pb-10 sm:px-4">
