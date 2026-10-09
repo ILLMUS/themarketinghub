@@ -1124,7 +1124,7 @@ const AdDetailsPage = () => {
           </span>
 
           <span className="text-[11px] font-extrabold leading-tight">
-            Views & Pickup
+            Location & Pickup
           </span>
         </span>
       );
@@ -1143,7 +1143,101 @@ const AdDetailsPage = () => {
   const popupRight = RAIL_EDGE + iconsFromRight * (RAIL_SIZE + RAIL_GAP);
 
   return (
-    <div className="container py-3 sm:py-8 max-w-6xl px-3 sm:px-6 pb-28 sm:pb-12">
+    <div className="market-page bg-background min-h-screen">
+      <style>{`
+        /* Marketplace visual language with readable contrast and mobile-first sizing. */
+        .market-page {
+          min-height: 100vh;
+          width: 100%;
+          color: #172033;
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background:
+            radial-gradient(900px 500px at 10% 5%, rgba(124,58,237,.13), transparent 70%),
+            radial-gradient(900px 550px at 90% 15%, rgba(37,99,235,.12), transparent 70%),
+            radial-gradient(900px 600px at 50% 100%, rgba(234,179,8,.10), transparent 70%),
+            #f6f7fb;
+          overflow-x: clip;
+        }
+        .market-page .container { width: 100%; min-width: 0; }
+        .market-page .market-detail-panel,
+        .market-page .market-card {
+          --r-b: 30px;
+          --r-s: 15px;
+          min-width: 0;
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          color: #172033 !important;
+          border: 1px solid rgba(148,163,184,.24);
+          border-radius: var(--r-s) var(--r-b) var(--r-s) var(--r-s);
+          background: rgba(255,255,255,.96) !important;
+          box-shadow: 0 8px 24px rgba(31,41,55,.08), 0 2px 6px rgba(31,41,55,.04);
+          transition: transform 220ms ease, box-shadow 220ms ease;
+        }
+        .market-page .market-detail-panel::before,
+        .market-page .market-card::before {
+          content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+          border-radius: inherit;
+          border-top: 3px solid transparent;
+          background: linear-gradient(110deg,rgba(124,58,237,.10),rgba(37,99,235,.08),rgba(234,179,8,.10)) top/100% 4px no-repeat;
+        }
+        .market-page .market-detail-panel > *, .market-page .market-card > * { position: relative; z-index: 1; }
+        .market-page .market-detail-panel { --r-b: 38px; --r-s: 19px; padding: clamp(12px, 3vw, 20px); }
+        .market-page .market-detail-panel:hover,
+        .market-page .market-card:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(31,41,55,.12); }
+        .market-page .market-image-container { border-radius: 12px 20px 12px 12px; background: #f8fafc !important; overflow: hidden; }
+        .market-page .market-detail-panel .text-muted-foreground,
+        .market-page .market-card .text-muted-foreground { color: #64748b !important; }
+        .market-page .market-detail-panel .text-foreground,
+        .market-page .market-card .text-foreground { color: #172033 !important; }
+        .market-page .market-detail-panel .bg-muted,
+        .market-page .market-card .bg-muted { background: #f1f5f9 !important; }
+        .market-page .market-detail-panel [class*="text-white"],
+        .market-page .market-card [class*="text-white"] { color: #172033 !important; }
+        .market-page .market-detail-panel .border-border,
+        .market-page .market-detail-panel .border-border\/50,
+        .market-page .market-detail-panel .border-border\/80 { border-color: #e2e8f0 !important; }
+        .market-page .text-primary { color: #2563eb !important; }
+        .market-page .bg-primary { background: linear-gradient(135deg,#1d4ed8 0%,#4338ca 100%) !important; }
+        .market-page .border-primary { border-color: #10b981 !important; }
+        .market-page .text-blue-700 { color: #1d4ed8 !important; }
+        .market-page .market-detail-panel .listing-main-cta { min-height: 46px; color: #fff !important; background: linear-gradient(100deg,#2563eb,#4f46e5) !important; box-shadow: 0 5px 14px rgba(37,99,235,.20); }
+        .market-page .listing-main-cta:focus-visible, .market-page .listing-secondary-cta:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+        .market-page .listing-secondary-cta { color: #172033 !important; border-color: #dbe2ea !important; background: #fff !important; }
+        .market-page .market-detail-panel .market-image-container,
+        .market-page .market-card .market-image-container { background: #f8fafc !important; }
+        .market-page .market-detail-panel img, .market-page .market-card img { background: #f8fafc; }
+        .market-page .protected-communication { border: 1px solid #dbeafe; color: #172033 !important; background: linear-gradient(120deg,#eff6ff,#f5f3ff 60%,#fffbeb); box-shadow: 0 8px 24px rgba(31,41,55,.06); }
+        .market-page .protected-communication p, .market-page .protected-communication div { color: #334155 !important; }
+        .market-page .protected-communication svg { color: #047857 !important; }
+        .market-page .market-detail-panel h1,
+        .market-page .market-card h3,
+        .market-page .market-card p { color: #172033 !important; overflow-wrap: anywhere; }
+        .market-page .market-detail-panel .listing-main-cta svg { color: #fff !important; }
+        @media (max-width: 767px) {
+          .market-page .container { padding-left: 10px !important; padding-right: 10px !important; padding-top: 10px !important; }
+          .market-page .grid.md\\:grid-cols-12 { grid-template-columns: minmax(0,1fr) !important; gap: 12px !important; }
+          .market-page .md\\:col-span-7, .market-page .md\\:col-span-5 { grid-column: 1 / -1 !important; width: 100%; min-width: 0; }
+          .market-page .market-detail-panel { --r-b: 28px; --r-s: 14px; border-radius: 14px 28px 14px 14px; }
+          .market-page .market-detail-panel h1 { font-size: clamp(19px,5vw,24px); line-height: 1.2; overflow-wrap: anywhere; }
+          .market-page .market-detail-panel .text-center { text-align: left; }
+          .market-page .market-detail-panel .grid { grid-template-columns: minmax(0,1fr) !important; }
+          .market-page .market-detail-panel .listing-secondary-cta { width: 100%; }
+          .market-page .market-detail-panel .flex.items-center.gap-3 { flex-wrap: wrap; row-gap: 8px; }
+          .market-page .market-card { border-radius: 12px 24px 12px 12px; }
+          .market-page .market-card:hover, .market-page .market-detail-panel:hover { transform: none; }
+          .market-page .protected-communication { padding: 13px; }
+          .market-page .market-detail-panel .text-2xl { font-size: 1.5rem; line-height: 1.15; }
+        }
+        @media (max-width: 360px) {
+          .market-page .container { padding-left: 8px !important; padding-right: 8px !important; }
+          .market-page .market-detail-panel { padding: 11px !important; }
+          .market-page .market-detail-panel .text-\\[10px\\] { font-size: 10px; }
+          .market-page .market-detail-panel .flex.items-center.gap-3 { gap: 8px; }
+        }
+        @media (prefers-reduced-motion: reduce) { .market-page .market-card, .market-page .market-detail-panel { animation: none !important; transition: none !important; } .market-page .market-card:hover, .market-page .market-detail-panel:hover { transform: none; } }
+      `}</style>
+      <div className="container py-3 sm:py-8 max-w-6xl px-3 sm:px-6 pb-28 sm:pb-12">
       <Seo title={seoTitle} description={seoDesc} image={seoImage} url={canonical} type="product" />
 
       {/* Top Navigation (desktop only: on mobile the app header comes first) */}
@@ -1209,7 +1303,7 @@ const AdDetailsPage = () => {
           <div className="relative">
 
             {/* Main Visual Frame */}
-            <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-3xl bg-black/90 overflow-hidden border border-border/60 shadow-xl group flex items-center justify-center">
+            <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] market-image-container rounded-2xl bg-muted overflow-hidden border border-border/70 shadow-sm group flex items-center justify-center">
               {ad.images && ad.images.length > 0 ? (
                 <>
                   <img
@@ -1347,7 +1441,7 @@ const AdDetailsPage = () => {
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
-                  className={`relative w-14 h-14 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 bg-black/80 transition-all ${
+                  className={`relative w-14 h-14 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 bg-muted transition-all ${
                     i === selectedImage
                       ? "border-primary ring-2 ring-primary/30 scale-95 shadow-md"
                       : "border-transparent opacity-60 hover:opacity-100"
@@ -1385,7 +1479,7 @@ const AdDetailsPage = () => {
         <div className="md:col-span-5 space-y-3 md:space-y-4 md:sticky md:top-6">
 
           {/* 4. DETAILS CARD */}
-          <div className="rounded-[1.6rem] border-[1.5px] border-foreground/80 bg-card p-3 sm:p-5 space-y-3 md:rounded-[2rem] md:rounded-tr-[3rem] md:border md:border-border/80 md:bg-card/80 md:shadow-sm md:backdrop-blur-md md:space-y-4">
+          <div className="market-detail-panel p-3 sm:p-4 space-y-3 md:sticky md:top-6 md:space-y-4">
 
             {/* Category (grey tag, left) + LIVE NOW (green tag, right) */}
             <div className="flex items-center gap-2">
@@ -1481,54 +1575,78 @@ const AdDetailsPage = () => {
               </div>
             </div>
 
-            {/* Seller's other listings: 6 small cards in one row on mobile */}
+            {/* Primary action: marketplace contact, not a simulated payment checkout. */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <Button
+                type="button"
+                onClick={() => openModal("chat")}
+                className="listing-main-cta h-11 w-full rounded-xl border-0 bg-primary text-sm font-bold text-primary-foreground"
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Message seller securely
+              </Button>
+              {user && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => toggleSave(ad.id)}
+                  aria-label={isSaved(ad.id) ? "Remove from saved listings" : "Save listing"}
+                  className="listing-secondary-cta h-11 rounded-xl border-border bg-background px-4"
+                >
+                  <Heart className={`mr-2 h-4 w-4 ${isSaved(ad.id) ? "fill-rose-500 text-rose-500" : ""}`} />
+                  {isSaved(ad.id) ? "Saved" : "Save"}
+                </Button>
+              )}
+            </div>
+
+            {/* Seller's other listings: compact, readable horizontal storefront */}
             {sellerAds && sellerAds.length > 0 && (
-              <div className="-mx-1 flex snap-x gap-1 overflow-x-auto px-1 pb-1 scrollbar-none md:gap-2">
+              <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 scrollbar-none">
                 {sellerAds.map((item: AdRow) => (
                   <Link
                     key={item.id}
                     to={`/ad/${item.id}`}
-                    className="group block shrink-0 basis-[calc((100%-1.25rem)/6)] snap-start overflow-hidden rounded-tl-2xl rounded-tr-md rounded-b-md border-[1.5px] border-primary/80 bg-card transition hover:shadow-lg md:basis-auto md:w-[132px] md:rounded-tl-3xl md:rounded-tr-lg md:rounded-b-lg md:border md:border-border/80 md:hover:border-primary/40"
+                    className="market-card group block w-[112px] shrink-0 snap-start overflow-hidden transition hover:-translate-y-0.5 sm:w-[132px]"
                   >
-                    <div className="aspect-[4/3] overflow-hidden bg-black/90">
+                    <div className="market-image-container aspect-[4/3] overflow-hidden bg-muted">
                       {item.images?.[0] ? (
                         <img
                           src={item.images[0]}
                           alt={item.title}
                           loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[5px] text-muted-foreground md:text-[10px]">
+                        <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
                           No Image
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-px p-1 md:space-y-0.5 md:p-2">
+                    <div className="space-y-1 p-2">
                       <div className="flex flex-wrap items-center gap-px md:gap-1">
                         {isFeaturedAd(item) && (
-                          <span className="rounded-full bg-amber-300 px-1 text-[4px] font-black uppercase leading-[1.4] tracking-wider text-black md:px-1.5 md:py-px md:text-[7px]">
+                          <span className="rounded-full bg-amber-300 px-1.5 py-0.5 text-[8px] font-black uppercase leading-tight tracking-wide text-black">
                             Featured
                           </span>
                         )}
 
                         {item.categories?.name && (
-                          <span className="truncate rounded-full bg-muted px-1 text-[4px] font-extrabold uppercase leading-[1.4] tracking-wider md:px-1.5 md:py-px md:text-[7px]">
+                          <span className="max-w-full truncate rounded-full bg-muted px-1.5 py-0.5 text-[8px] font-extrabold uppercase leading-tight tracking-wide">
                             {item.categories.name}
                           </span>
                         )}
                       </div>
 
-                      <p className="line-clamp-1 text-[5px] font-bold leading-tight md:text-[10px]">
+                      <p className="line-clamp-2 min-h-[2rem] text-[10px] font-bold leading-snug">
                         {item.title}
                       </p>
 
-                      <p className="truncate text-[4px] leading-tight text-muted-foreground md:text-[9px]">
+                      <p className="truncate text-[9px] leading-tight text-muted-foreground">
                         {item.location}
                       </p>
 
-                      <p className="text-[5px] font-black leading-tight text-blue-700 dark:text-blue-400 md:text-[11px] md:text-primary">
+                      <p className="mt-1 text-xs font-black leading-tight text-blue-700 dark:text-blue-400">
                         E{item.price.toLocaleString()}
                       </p>
                     </div>
@@ -1540,7 +1658,7 @@ const AdDetailsPage = () => {
             {/* View My Store */}
             <Link
               to={storePath(ad.user_id)}
-              className="inline-flex items-center gap-1.5 text-[10px] font-bold hover:text-primary sm:text-xs"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border/80 bg-background px-3 text-[11px] font-bold hover:border-primary/50 hover:text-primary sm:text-xs"
             >
               <Store className="h-3.5 w-3.5" />
               View My Store
@@ -1548,7 +1666,7 @@ const AdDetailsPage = () => {
           </div>
 
           {/* 5. PROTECTED COMMUNICATION */}
-          <div className="space-y-1.5 rounded-[1.6rem] border border-emerald-500/20 bg-emerald-500/10 p-4 sm:p-5 md:rounded-[2rem] md:rounded-bl-[3rem] md:border-emerald-500/30">
+          <div className="protected-communication space-y-1.5 rounded-[1.1rem] rounded-tr-[2.5rem] p-4 sm:p-5">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 sm:text-xs">
               <Lock className="h-3.5 w-3.5 shrink-0 fill-current" /> Protected Communication
             </div>
@@ -1570,17 +1688,17 @@ const AdDetailsPage = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {similarAds.map((adItem) => (
               <div key={adItem.id}>
-                <Link to={`/ad/${adItem.id}`} className="group block rounded-2xl border border-border/80 bg-card overflow-hidden hover:shadow-xl hover:border-primary/40 transition-all duration-300">
-                  <div className="aspect-[4/3] bg-black/90 overflow-hidden relative">
+                <Link to={`/ad/${adItem.id}`} className="market-card group block overflow-hidden p-2 transition-all duration-300">
+                  <div className="market-image-container aspect-[4/3] bg-muted overflow-hidden relative">
                     {adItem.images?.[0] ? (
                       <img src={adItem.images[0]} alt={adItem.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
                     )}
                   </div>
-                  <div className="p-3 sm:p-4">
-                    <h3 className="font-semibold text-xs sm:text-sm line-clamp-2">{adItem.title}</h3>
-                    <p className="text-sm sm:text-base font-extrabold text-primary mt-1.5">E{adItem.price.toLocaleString()}</p>
+                  <div className="px-1.5 pb-1 pt-2.5">
+                    <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 text-white">{adItem.title}</h3>
+                    <p className="text-sm sm:text-base font-extrabold text-white mt-1.5">E{adItem.price.toLocaleString()}</p>
                   </div>
                 </Link>
               </div>
@@ -1650,6 +1768,7 @@ const AdDetailsPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };
