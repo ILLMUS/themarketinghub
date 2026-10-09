@@ -38,14 +38,14 @@ const MESSAGES_TABLE = "messages";
 
 const storePath = (userId: string) => `/store/${userId}`;
 
-/* Popups above the image: one at a time, each stays for 4 seconds,
-   the next one follows straight away. */
+/* Popups: one at a time, each stays for 4 seconds, the next one
+   follows straight away (smooth fade / slide). */
 const POPUP_MS = 4000;
 
 /* Icon rail geometry (used to point each popup at its icon) */
 const RAIL_SIZE = 36;
-const RAIL_GAP = 8;
-const RAIL_EDGE = 12;
+const RAIL_GAP = 4;
+const RAIL_EDGE = 4;
 
 /* =========================================================
    TYPES
@@ -185,7 +185,9 @@ const StarRow = ({
 
 /* =========================================================
    MODAL SHELL
-   Opens over the page, so the person never leaves the listing.
+   MOBILE : sits right over the product image zone (as in the
+            wireframe), the person never leaves the listing.
+   DESKTOP: centered overlay with a dark backdrop.
 ========================================================= */
 
 const Modal = ({
@@ -209,15 +211,15 @@ const Modal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        className="absolute inset-x-0 top-2 z-40 md:fixed md:inset-0 md:top-0 md:z-[60] md:flex md:items-center md:justify-center md:bg-black/60 md:p-4 md:backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
-          initial={{ opacity: 0, y: 28, scale: 0.96 }}
+          initial={{ opacity: 0, y: -12, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 28, scale: 0.96 }}
+          exit={{ opacity: 0, y: -12, scale: 0.96 }}
           transition={{ type: "spring", damping: 26, stiffness: 320 }}
-          className="relative w-full max-w-sm"
+          className="relative mx-auto w-full px-1 md:max-w-sm md:px-0"
           onClick={(e) => e.stopPropagation()}
         >
           {children}
@@ -639,7 +641,7 @@ const ChatModal = ({
   };
 
   return (
-    <div className="flex h-[70vh] max-h-[560px] flex-col overflow-hidden rounded-[2rem] rounded-tr-[3rem] border border-border/80 bg-card shadow-2xl">
+    <div className="flex h-[380px] max-h-[70vh] flex-col overflow-hidden rounded-[2rem] rounded-tr-[3rem] border border-border/80 bg-card shadow-2xl md:h-[70vh] md:max-h-[560px]">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-3">
         <button
@@ -916,7 +918,8 @@ const AdDetailsPage = () => {
   }, [previewOpen, ad]);
 
   /* ---------------------------------------------------------
-     MODALS: Escape closes, page behind does not scroll
+     MODALS: Escape closes. On desktop the page behind does not
+     scroll (on mobile the modal sits inside the page instead).
   --------------------------------------------------------- */
 
   useEffect(() => {
@@ -926,8 +929,9 @@ const AdDetailsPage = () => {
       if (e.key === "Escape") setModal(null);
     };
 
+    const isDesktop = window.matchMedia("(min-width: 768px)").matches;
     const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (isDesktop) document.body.style.overflow = "hidden";
 
     window.addEventListener("keydown", handleKeyDown);
 
@@ -1134,119 +1138,136 @@ const AdDetailsPage = () => {
     );
   };
 
-  const popupRight =
-    RAIL_EDGE + (RAIL.length - 1 - popupIdx) * (RAIL_SIZE + RAIL_GAP);
+  /* Popup sits under its own icon (icons are right-aligned) */
+  const iconsFromRight = RAIL.length - 1 - popupIdx;
+  const popupRight = RAIL_EDGE + iconsFromRight * (RAIL_SIZE + RAIL_GAP);
 
   return (
-    <div className="container py-4 sm:py-8 max-w-6xl px-3 sm:px-6 pb-28 sm:pb-12">
+    <div className="container py-3 sm:py-8 max-w-6xl px-3 sm:px-6 pb-28 sm:pb-12">
       <Seo title={seoTitle} description={seoDesc} image={seoImage} url={canonical} type="product" />
 
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between mb-3 sm:mb-6">
-        <Button variant="outline" size="sm" asChild className="rounded-full backdrop-blur-md bg-background/80 hover:bg-muted border-border/80 shadow-sm text-xs sm:text-sm">
+      {/* Top Navigation (desktop only: on mobile the app header comes first) */}
+      <div className="hidden md:flex items-center justify-between mb-6">
+        <Button variant="outline" size="sm" asChild className="rounded-full backdrop-blur-md bg-background/80 hover:bg-muted border-border/80 shadow-sm text-sm">
           <Link to="/marketplace"><ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Marketplace</Link>
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-12 gap-4 md:gap-8 items-start">
+      {/* Mobile scrim: tapping outside a modal closes it */}
+      {modal && (
+        <div
+          className="fixed inset-0 z-30 md:hidden"
+          onClick={() => setModal(null)}
+          aria-hidden="true"
+        />
+      )}
+
+      <div className="grid md:grid-cols-12 gap-3 md:gap-8 items-start">
 
         {/* =================================================
-            LEFT: PRODUCT IMAGE + ICON RAIL + STORE RATING
+            LEFT / TOP (mobile order):
+            1. icon row   2. product image   3. store rating
         ================================================= */}
         <div className="md:col-span-7 space-y-3">
 
-          {/* Main Visual Frame */}
-          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-3xl bg-black/90 overflow-hidden border border-border/60 shadow-xl group flex items-center justify-center">
-            {ad.images && ad.images.length > 0 ? (
-              <>
-                <img
-                  src={ad.images[selectedImage]}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110 pointer-events-none"
-                />
+          {/* 1. ICON ROW: rate | share | location | chat */}
+          <div
+            className="relative z-20 flex items-center justify-end"
+            style={{ gap: RAIL_GAP, paddingRight: RAIL_EDGE }}
+          >
+            {RAIL.map((item, i) => {
+              const Icon = item.icon;
+              const active = !popupsPaused && popupIdx === i;
+              const rated = item.key === "rate" && (rating?.mine ?? 0) > 0;
 
-                <motion.img
-                  key={selectedImage}
-                  initial={{ opacity: 0.85, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.25 }}
-                  src={ad.images[selectedImage]}
-                  alt={ad.title}
-                  onClick={() => setPreviewOpen(true)}
-                  className="relative z-10 max-w-full max-h-full object-contain cursor-zoom-in transition-transform duration-500 group-hover:scale-[1.02]"
-                />
-
+              return (
                 <button
-                  onClick={() => setPreviewOpen(true)}
-                  className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-[11px] font-medium text-white shadow-lg transition-all"
+                  key={item.key}
+                  type="button"
+                  aria-label={item.label}
+                  onClick={() => openModal(item.key)}
+                  className={`flex items-center justify-center rounded-full transition-all duration-300 ${
+                    active
+                      ? "scale-110 bg-primary/15 text-primary"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                  style={{ width: RAIL_SIZE, height: RAIL_SIZE }}
                 >
-                  <Maximize2 className="h-3 w-3 text-primary" /> Full View
+                  <Icon
+                    className={`h-[18px] w-[18px] ${
+                      item.key === "location" || item.key === "share"
+                        ? "fill-current"
+                        : ""
+                    } ${rated ? "fill-amber-400 text-amber-400" : ""}`}
+                  />
                 </button>
+              );
+            })}
+          </div>
 
-                {ad.images.length > 1 && (
-                  <span className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white tracking-wider">
-                    {selectedImage + 1} / {ad.images.length}
-                  </span>
-                )}
-              </>
-            ) : (
-              <div className="text-muted-foreground text-xs flex flex-col items-center gap-2">
-                <Tag className="h-8 w-8 opacity-40" />
-                <span>No media attached</span>
-              </div>
-            )}
+          {/* 2. PRODUCT IMAGE ZONE (popups + modals sit on top of it) */}
+          <div className="relative">
 
-            {/* Save (heart) */}
-            {user && (
-              <button
-                type="button"
-                aria-label={isSaved(ad.id) ? "Remove from saved" : "Save listing"}
-                onClick={() => toggleSave(ad.id)}
-                className={`absolute left-3 top-3 z-30 flex items-center justify-center rounded-full border backdrop-blur-md transition-all ${
-                  isSaved(ad.id)
-                    ? "border-rose-500/40 bg-rose-500/20 text-rose-500"
-                    : "border-white/20 bg-black/55 text-white hover:bg-black/75"
-                }`}
-                style={{ width: RAIL_SIZE, height: RAIL_SIZE }}
-              >
-                <Heart className={`h-4 w-4 ${isSaved(ad.id) ? "fill-rose-500" : ""}`} />
-              </button>
-            )}
+            {/* Main Visual Frame */}
+            <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-3xl bg-black/90 overflow-hidden border border-border/60 shadow-xl group flex items-center justify-center">
+              {ad.images && ad.images.length > 0 ? (
+                <>
+                  <img
+                    src={ad.images[selectedImage]}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110 pointer-events-none"
+                  />
 
-            {/* ICON RAIL: rate | share | location | chat */}
-            <div
-              className="absolute z-30 flex"
-              style={{ top: RAIL_EDGE, right: RAIL_EDGE, gap: RAIL_GAP }}
-            >
-              {RAIL.map((item, i) => {
-                const Icon = item.icon;
-                const active = !popupsPaused && popupIdx === i;
-                const rated = item.key === "rate" && (rating?.mine ?? 0) > 0;
+                  <motion.img
+                    key={selectedImage}
+                    initial={{ opacity: 0.85, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.25 }}
+                    src={ad.images[selectedImage]}
+                    alt={ad.title}
+                    onClick={() => setPreviewOpen(true)}
+                    className="relative z-10 max-w-full max-h-full object-contain cursor-zoom-in transition-transform duration-500 group-hover:scale-[1.02]"
+                  />
 
-                return (
                   <button
-                    key={item.key}
-                    type="button"
-                    aria-label={item.label}
-                    onClick={() => openModal(item.key)}
-                    className={`flex items-center justify-center rounded-full border backdrop-blur-md transition-all duration-300 ${
-                      active
-                        ? "scale-110 border-primary bg-primary text-primary-foreground shadow-lg"
-                        : "border-white/20 bg-black/55 text-white hover:bg-black/75"
-                    }`}
-                    style={{ width: RAIL_SIZE, height: RAIL_SIZE }}
+                    onClick={() => setPreviewOpen(true)}
+                    className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-[11px] font-medium text-white shadow-lg transition-all"
                   >
-                    <Icon
-                      className={`h-4 w-4 ${
-                        rated ? "fill-amber-400 text-amber-400" : ""
-                      }`}
-                    />
+                    <Maximize2 className="h-3 w-3 text-primary" /> Full View
                   </button>
-                );
-              })}
+
+                  {ad.images.length > 1 && (
+                    <span className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white tracking-wider">
+                      {selectedImage + 1} / {ad.images.length}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <div className="text-muted-foreground text-xs flex flex-col items-center gap-2">
+                  <Tag className="h-8 w-8 opacity-40" />
+                  <span>No media attached</span>
+                </div>
+              )}
+
+              {/* Save (heart) - desktop only, mobile uses the bottom nav heart */}
+              {user && (
+                <button
+                  type="button"
+                  aria-label={isSaved(ad.id) ? "Remove from saved" : "Save listing"}
+                  onClick={() => toggleSave(ad.id)}
+                  className={`absolute left-3 top-3 z-30 hidden md:flex items-center justify-center rounded-full border backdrop-blur-md transition-all ${
+                    isSaved(ad.id)
+                      ? "border-rose-500/40 bg-rose-500/20 text-rose-500"
+                      : "border-white/20 bg-black/55 text-white hover:bg-black/75"
+                  }`}
+                  style={{ width: RAIL_SIZE, height: RAIL_SIZE }}
+                >
+                  <Heart className={`h-4 w-4 ${isSaved(ad.id) ? "fill-rose-500" : ""}`} />
+                </button>
+              )}
             </div>
 
-            {/* AUTO POPUP: one at a time, 4 seconds each */}
+            {/* AUTO POPUP: one at a time, 4 seconds each, points at its icon */}
             <AnimatePresence mode="wait">
               {!popupsPaused && (
                 <motion.button
@@ -1258,11 +1279,8 @@ const AdDetailsPage = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.94 }}
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute z-30 flex items-center gap-2 rounded-full border border-border bg-background/95 px-3 py-1.5 text-foreground shadow-xl backdrop-blur-md"
-                  style={{
-                    top: RAIL_EDGE + RAIL_SIZE + 10,
-                    right: popupRight,
-                  }}
+                  className="absolute top-3 z-30 flex items-center gap-2 rounded-full border border-border bg-background/95 px-3 py-1.5 text-foreground shadow-xl backdrop-blur-md"
+                  style={{ right: popupRight }}
                 >
                   <span
                     aria-hidden="true"
@@ -1274,6 +1292,52 @@ const AdDetailsPage = () => {
                 </motion.button>
               )}
             </AnimatePresence>
+
+            {/* MODALS (over the image zone on mobile) */}
+            <Modal open={modal === "rate"} onClose={() => setModal(null)} label="Rate this store">
+              <RateModal
+                sellerName={ad.seller_name}
+                summary={rating}
+                onSubmit={submitRating}
+                onClose={() => setModal(null)}
+              />
+            </Modal>
+
+            <Modal open={modal === "location"} onClose={() => setModal(null)} label="Location and pickup">
+              <LocationModal
+                ad={ad}
+                distanceKm={distanceKm}
+                mapEmbedUrl={mapEmbedUrl}
+                pinUrl={pinUrl}
+                onClose={() => setModal(null)}
+              />
+            </Modal>
+
+            <Modal open={modal === "share"} onClose={() => setModal(null)} label="Share this listing">
+              <ShareModal
+                url={canonical}
+                title={shareTitle}
+                onClose={() => setModal(null)}
+              />
+            </Modal>
+
+            <Modal open={modal === "chat"} onClose={() => setModal(null)} label="Chat with the seller">
+              {user && (
+                <ChatModal
+                  ad={ad}
+                  userId={user.id}
+                  onClose={() => setModal(null)}
+                  onOpenFull={(conversationId) => {
+                    setModal(null);
+                    navigate(
+                      conversationId
+                        ? `/messages?conversation=${conversationId}`
+                        : "/messages"
+                    );
+                  }}
+                />
+              )}
+            </Modal>
           </div>
 
           {/* Interactive Thumbnails Bar */}
@@ -1283,7 +1347,7 @@ const AdDetailsPage = () => {
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
-                  className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 bg-black/80 transition-all ${
+                  className={`relative w-14 h-14 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 bg-black/80 transition-all ${
                     i === selectedImage
                       ? "border-primary ring-2 ring-primary/30 scale-95 shadow-md"
                       : "border-transparent opacity-60 hover:opacity-100"
@@ -1295,11 +1359,11 @@ const AdDetailsPage = () => {
             </div>
           )}
 
-          {/* STORE RATING ROW */}
+          {/* 3. STORE RATING ROW (green rules above and below) */}
           <button
             type="button"
             onClick={() => openModal("rate")}
-            className="flex w-full items-center gap-2 border-y border-border/70 px-1 py-2 text-left transition hover:bg-muted/40"
+            className="flex w-full items-center gap-2 border-y-2 border-primary/70 px-2 py-1.5 text-left transition hover:bg-muted/40"
             aria-label="Rate this store"
           >
             <StarRow value={rating?.avg ?? 0} size={18} />
@@ -1315,35 +1379,36 @@ const AdDetailsPage = () => {
         </div>
 
         {/* =================================================
-            RIGHT: DETAILS CARD + PROTECTED COMMUNICATION
+            RIGHT / BOTTOM (mobile order):
+            4. details card   5. protected communication
         ================================================= */}
-        <div className="md:col-span-5 space-y-4 md:sticky md:top-6">
+        <div className="md:col-span-5 space-y-3 md:space-y-4 md:sticky md:top-6">
 
-          {/* DETAILS CARD */}
-          <div className="rounded-[2rem] rounded-tr-[3rem] border border-border/80 bg-card/80 p-4 shadow-sm backdrop-blur-md sm:p-5 space-y-4">
+          {/* 4. DETAILS CARD */}
+          <div className="rounded-[1.6rem] border-[1.5px] border-foreground/80 bg-card p-3 sm:p-5 space-y-3 md:rounded-[2rem] md:rounded-tr-[3rem] md:border md:border-border/80 md:bg-card/80 md:shadow-sm md:backdrop-blur-md md:space-y-4">
 
-            {/* Category + LIVE NOW */}
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Category (grey tag, left) + LIVE NOW (green tag, right) */}
+            <div className="flex items-center gap-2">
               {ad.categories?.name && (
-                <Badge variant="secondary" className="rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider border border-border/50">
+                <Badge variant="secondary" className="rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider border border-border/50 bg-muted text-muted-foreground">
                   {ad.categories.name}
                 </Badge>
               )}
 
               {featured && (
-                <Badge className="gradient-accent border-0 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                <Badge className="gradient-accent border-0 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm">
                   Featured
                 </Badge>
               )}
 
-              <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              <span className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 Live Now
               </span>
             </div>
 
-            {/* Title + description */}
-            <div className="space-y-2">
+            {/* Title + description (centered, like the wireframe) */}
+            <div className="space-y-1.5 text-center md:text-left">
               <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">
                 {ad.title}
               </h1>
@@ -1371,61 +1436,59 @@ const AdDetailsPage = () => {
               )}
             </div>
 
-            {/* Price */}
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black tracking-tight text-primary sm:text-4xl">
+            {/* Price (blue, left) */}
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-black tracking-tight text-blue-700 dark:text-blue-400 sm:text-4xl">
                 E{ad.price.toLocaleString()}
               </span>
 
-              <span className="text-xs font-bold text-muted-foreground">SZL</span>
+              <span className="text-[10px] font-bold text-muted-foreground">SZL</span>
             </div>
 
-            {/* Location + date + verified icon */}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex min-w-0 items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+            {/* Location + date, rule, verified icon at the end */}
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground sm:text-xs">
+              <span className="flex min-w-0 items-center gap-1 font-semibold">
+                <MapPin className="h-3 w-3 shrink-0 fill-foreground text-foreground" />
                 <span className="truncate">{ad.location}</span>
               </span>
 
-              <span className="flex shrink-0 items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
+              <span className="flex shrink-0 items-center gap-1 font-semibold">
+                <Calendar className="h-3 w-3" />
                 {format(new Date(ad.created_at), "MMM d, yyyy")}
               </span>
 
-              <span className="h-px flex-1 bg-border" />
+              <span className="h-px flex-1 bg-foreground/80" />
 
               <UserCheck
-                className="h-5 w-5 shrink-0 text-emerald-500"
+                className="h-5 w-5 shrink-0 text-foreground"
                 aria-label="Verified seller"
               />
             </div>
 
             {/* Seller */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
-                <User className="h-5 w-5" />
-              </div>
+            <div className="flex items-center gap-2.5">
+              <User className="h-5 w-5 shrink-0 fill-foreground text-foreground" />
 
               <div className="min-w-0">
-                <h4 className="truncate text-sm font-bold leading-tight">
+                <h4 className="truncate text-xs font-bold leading-tight sm:text-sm">
                   {ad.seller_name}
                 </h4>
 
-                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1 text-[9px] text-muted-foreground sm:text-[11px]">
                   <ShieldCheck className="h-3 w-3 text-emerald-500" />
                   Verified Member
                 </p>
               </div>
             </div>
 
-            {/* Seller's other listings */}
+            {/* Seller's other listings: 6 small cards in one row on mobile */}
             {sellerAds && sellerAds.length > 0 && (
-              <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
+              <div className="-mx-1 flex snap-x gap-1 overflow-x-auto px-1 pb-1 scrollbar-none md:gap-2">
                 {sellerAds.map((item: AdRow) => (
                   <Link
                     key={item.id}
                     to={`/ad/${item.id}`}
-                    className="group block w-[132px] shrink-0 snap-start overflow-hidden rounded-tl-3xl rounded-tr-lg rounded-b-lg border border-border/80 bg-card transition hover:border-primary/40 hover:shadow-lg"
+                    className="group block shrink-0 basis-[calc((100%-1.25rem)/6)] snap-start overflow-hidden rounded-tl-2xl rounded-tr-md rounded-b-md border-[1.5px] border-primary/80 bg-card transition hover:shadow-lg md:basis-auto md:w-[132px] md:rounded-tl-3xl md:rounded-tr-lg md:rounded-b-lg md:border md:border-border/80 md:hover:border-primary/40"
                   >
                     <div className="aspect-[4/3] overflow-hidden bg-black/90">
                       {item.images?.[0] ? (
@@ -1436,36 +1499,36 @@ const AdDetailsPage = () => {
                           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                        <div className="flex h-full w-full items-center justify-center text-[5px] text-muted-foreground md:text-[10px]">
                           No Image
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-0.5 p-2">
-                      <div className="flex flex-wrap items-center gap-1">
+                    <div className="space-y-px p-1 md:space-y-0.5 md:p-2">
+                      <div className="flex flex-wrap items-center gap-px md:gap-1">
                         {isFeaturedAd(item) && (
-                          <span className="rounded-full bg-amber-300 px-1.5 py-px text-[7px] font-black uppercase tracking-wider text-black">
+                          <span className="rounded-full bg-amber-300 px-1 text-[4px] font-black uppercase leading-[1.4] tracking-wider text-black md:px-1.5 md:py-px md:text-[7px]">
                             Featured
                           </span>
                         )}
 
                         {item.categories?.name && (
-                          <span className="truncate rounded-full bg-muted px-1.5 py-px text-[7px] font-extrabold uppercase tracking-wider">
+                          <span className="truncate rounded-full bg-muted px-1 text-[4px] font-extrabold uppercase leading-[1.4] tracking-wider md:px-1.5 md:py-px md:text-[7px]">
                             {item.categories.name}
                           </span>
                         )}
                       </div>
 
-                      <p className="line-clamp-1 text-[10px] font-bold">
+                      <p className="line-clamp-1 text-[5px] font-bold leading-tight md:text-[10px]">
                         {item.title}
                       </p>
 
-                      <p className="truncate text-[9px] text-muted-foreground">
+                      <p className="truncate text-[4px] leading-tight text-muted-foreground md:text-[9px]">
                         {item.location}
                       </p>
 
-                      <p className="text-[11px] font-black text-primary">
+                      <p className="text-[5px] font-black leading-tight text-blue-700 dark:text-blue-400 md:text-[11px] md:text-primary">
                         E{item.price.toLocaleString()}
                       </p>
                     </div>
@@ -1477,20 +1540,20 @@ const AdDetailsPage = () => {
             {/* View My Store */}
             <Link
               to={storePath(ad.user_id)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold hover:text-primary"
+              className="inline-flex items-center gap-1.5 text-[10px] font-bold hover:text-primary sm:text-xs"
             >
-              <Store className="h-4 w-4" />
+              <Store className="h-3.5 w-3.5" />
               View My Store
             </Link>
           </div>
 
-          {/* PROTECTED COMMUNICATION */}
-          <div className="space-y-1.5 rounded-[2rem] rounded-bl-[3rem] border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-              <Lock className="h-4 w-4 shrink-0" /> Protected Communication
+          {/* 5. PROTECTED COMMUNICATION */}
+          <div className="space-y-1.5 rounded-[1.6rem] border border-emerald-500/20 bg-emerald-500/10 p-4 sm:p-5 md:rounded-[2rem] md:rounded-bl-[3rem] md:border-emerald-500/30">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 sm:text-xs">
+              <Lock className="h-3.5 w-3.5 shrink-0 fill-current" /> Protected Communication
             </div>
 
-            <p className="text-[11px] leading-snug text-muted-foreground">
+            <p className="text-[10px] font-bold leading-snug text-emerald-800/80 dark:text-emerald-300/80 sm:text-[11px] sm:font-normal sm:text-muted-foreground">
               To prevent scams, phishing, and unwanted calls, all communications are safely handled within Market Hub chat. Never share sensitive bank details or passwords.
             </p>
           </div>
@@ -1525,55 +1588,6 @@ const AdDetailsPage = () => {
           </div>
         </div>
       )}
-
-      {/* =====================================================
-          MODALS (the person never leaves the page)
-      ===================================================== */}
-
-      <Modal open={modal === "rate"} onClose={() => setModal(null)} label="Rate this store">
-        <RateModal
-          sellerName={ad.seller_name}
-          summary={rating}
-          onSubmit={submitRating}
-          onClose={() => setModal(null)}
-        />
-      </Modal>
-
-      <Modal open={modal === "location"} onClose={() => setModal(null)} label="Location and pickup">
-        <LocationModal
-          ad={ad}
-          distanceKm={distanceKm}
-          mapEmbedUrl={mapEmbedUrl}
-          pinUrl={pinUrl}
-          onClose={() => setModal(null)}
-        />
-      </Modal>
-
-      <Modal open={modal === "share"} onClose={() => setModal(null)} label="Share this listing">
-        <ShareModal
-          url={canonical}
-          title={shareTitle}
-          onClose={() => setModal(null)}
-        />
-      </Modal>
-
-      <Modal open={modal === "chat"} onClose={() => setModal(null)} label="Chat with the seller">
-        {user && (
-          <ChatModal
-            ad={ad}
-            userId={user.id}
-            onClose={() => setModal(null)}
-            onOpenFull={(conversationId) => {
-              setModal(null);
-              navigate(
-                conversationId
-                  ? `/messages?conversation=${conversationId}`
-                  : "/messages"
-              );
-            }}
-          />
-        )}
-      </Modal>
 
       {/* Lightbox Interactive Modal */}
       <AnimatePresence>
