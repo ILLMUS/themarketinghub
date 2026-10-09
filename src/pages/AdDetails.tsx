@@ -1654,10 +1654,10 @@ const AdDetailsPage = () => {
                 ))}
               </div>
             )}
-
+ 
             {/* View My Store */}
             <Link
-              to={storePath(ad.user_id)}
+              to="/profile"
               className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border/80 bg-background px-3 text-[11px] font-bold hover:border-primary/50 hover:text-primary sm:text-xs"
             >
               <Store className="h-3.5 w-3.5" />

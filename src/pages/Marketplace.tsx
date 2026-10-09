@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CategoryBanner } from "@/components/CategoryBanner";
 import { SidebarBanner } from "@/components/SidebarBanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SlidersHorizontal, MapPin, Store, Package, ShoppingCart, Heart } from "lucide-react";
+import { SlidersHorizontal, MapPin, Store, Package, ShoppingCart, Heart, Crown, Star } from "lucide-react";
 import * as SeoModule from "@/hooks/useSeo";
 
 // Safe fallback for Seo hook/component
@@ -35,22 +35,43 @@ const tierLabel = (ad: any) =>
 const tierRank = (ad: any) => (tierLabel(ad) === "Premium" ? 0 : tierLabel(ad) === "Featured" ? 1 : 2);
 
 /* =========================================================
-   MARKETPLACE CARD (same card as the home page, laid out like the mockup:
-   image panel on top, details underneath, cart + heart buttons.
-   `mirror` flips the right-hand card on mobile / tablet.)
+   MARKETPLACE CARD (laid out like the mockup)
+
+   - IMAGE PANEL on top with the tier BANNER (Premium / Featured)
+     across the top of the panel
+   - DETAILS underneath, ALL INSIDE the card:
+       pill + category, title, price, location | cart + heart
+   - `mirror` flips the right-hand card on mobile / tablet
 ========================================================= */
 const MarketCard = ({ ad, shape, mirror }: { ad: any; shape: string; mirror: boolean }) => {
   const [liked, setLiked] = useState(false);
   const category = getCategoryName(ad);
   const label = tierLabel(ad);
+  const showBanner = label !== "Standard";
 
   return (
-    <article className={`market-card market-bento ${shape} group flex min-w-0 flex-col p-2 ${mirror ? "market-mirror" : ""}`}>
-      {/* IMAGE PANEL */}
+    <article
+      className={`market-card market-bento ${shape} group flex min-w-0 flex-col overflow-hidden p-2 ${
+        mirror ? "market-mirror" : ""
+      }`}
+    >
+      {/* IMAGE PANEL + TIER BANNER */}
       <Link
         to={`/ad/${ad.id}`}
-        className="market-image-container market-apple-image flex aspect-[4/3] w-full items-center justify-center overflow-hidden p-1.5"
+        className="market-image-container market-apple-image relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden p-1.5"
+        style={showBanner ? { paddingTop: 24 } : undefined}
       >
+        {showBanner && (
+          <span className={`market-banner market-banner-${label.toLowerCase()}`}>
+            {label === "Premium" ? (
+              <Crown className="h-2.5 w-2.5 shrink-0" />
+            ) : (
+              <Star className="h-2.5 w-2.5 shrink-0 fill-current" />
+            )}
+            {label}
+          </span>
+        )}
+
         {ad.images?.[0] ? (
           <img
             src={ad.images[0]}
@@ -64,31 +85,33 @@ const MarketCard = ({ ad, shape, mirror }: { ad: any; shape: string; mirror: boo
         )}
       </Link>
 
-      {/* DETAILS — outside the image, inside the card */}
-      <div className="market-apple-details flex shrink-0 items-end justify-between gap-2 px-1.5 pb-1 pt-2.5">
-        <Link to={`/ad/${ad.id}`} className="market-apple-text min-w-0 flex-1">
-          <div className="market-apple-meta mb-1 flex items-center gap-2">
-            <span className="market-badge">{label}</span>
+      {/* DETAILS: inside the card, under the image */}
+      <div className="market-apple-details flex min-w-0 shrink-0 items-end justify-between gap-1.5 px-1.5 pb-1 pt-2.5">
+        <Link to={`/ad/${ad.id}`} className="market-apple-text min-w-0 flex-1 overflow-hidden">
+          <div className="market-apple-meta mb-1 flex min-w-0 items-center gap-1.5 overflow-hidden">
+            <span className="market-badge shrink-0">{label}</span>
             {category && (
-              <span className="truncate text-[9px] font-semibold uppercase tracking-wide opacity-70">{category}</span>
+              <span className="min-w-0 truncate text-[9px] font-semibold uppercase tracking-wide opacity-70">
+                {category}
+              </span>
             )}
           </div>
 
-          <h3 className="line-clamp-2 text-[11px] font-bold leading-tight sm:text-sm">{ad.title}</h3>
+          <h3 className="line-clamp-2 break-words text-[11px] font-bold leading-tight sm:text-sm">{ad.title}</h3>
 
-          <p className="mt-1 text-sm font-black leading-none sm:text-base">
+          <p className="mt-1 truncate text-sm font-black leading-none sm:text-base">
             E{Number(ad.price ?? 0).toLocaleString()}
           </p>
 
           {ad.location && (
-            <p className="market-apple-location mt-1 flex items-center gap-0.5 text-[9px] opacity-70 sm:text-[10px]">
+            <p className="market-apple-location mt-1 flex min-w-0 items-center gap-0.5 text-[9px] opacity-70 sm:text-[10px]">
               <MapPin className="h-2.5 w-2.5 shrink-0" />
               <span className="truncate">{ad.location}</span>
             </p>
           )}
         </Link>
 
-        <div className="market-actions flex shrink-0 items-center gap-1.5">
+        <div className="market-actions flex shrink-0 items-center gap-1">
           <button type="button" aria-label="Add to cart" className="market-round-btn">
             <ShoppingCart className="h-3.5 w-3.5" />
           </button>
@@ -437,6 +460,36 @@ const MarketplacePage = () => {
         .market-image { transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1); }
         .market-card:hover .market-image { transform: scale(1.045); }
 
+        /* TIER BANNER: strip across the top of the image panel.
+           The panel clips it to the card's concentric corners. */
+        .market-banner {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          height: 20px;
+          font-size: 8px;
+          font-weight: 900;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          pointer-events: none;
+        }
+        .market-banner-premium {
+          color: #111827;
+          background: linear-gradient(90deg, #facc15, #fde68a, #facc15);
+          box-shadow: 0 2px 8px rgba(234, 179, 8, 0.35);
+        }
+        .market-banner-featured {
+          color: #ffffff;
+          background: linear-gradient(90deg, rgba(124, 58, 237, 0.96), rgba(37, 99, 235, 0.94));
+          box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
         .market-badge {
           display: inline-flex;
           align-items: center;
@@ -468,6 +521,12 @@ const MarketplacePage = () => {
         }
         .market-round-btn:hover { background: #ffffff; color: #111827; transform: scale(1.08); }
         .market-round-btn.is-liked { background: #facc15; border-color: #facc15; color: #111827; }
+
+        /* Small phones: slightly smaller buttons so the text always fits inside the card */
+        @media (max-width: 479px) {
+          .market-round-btn { width: 24px; height: 24px; }
+          .market-banner { height: 18px; font-size: 7px; }
+        }
 
         /* Right-hand card = mirror of the left-hand card (mobile / tablet, 2 columns) */
         @media (max-width: 1023px) {
